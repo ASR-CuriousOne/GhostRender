@@ -2,7 +2,7 @@
 #include <Ghost/ghostRender.hpp>
 
 namespace Ghost {
-GhostRender::GhostRender(): m_window() {}
+GhostRender::GhostRender(){}
 
 GhostRender::~GhostRender() {
   

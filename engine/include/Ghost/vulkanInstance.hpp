@@ -1,15 +1,18 @@
 #pragma once
-#include <vulkan/vulkan.hpp>
+#include <vector>
+#include <vulkan/vulkan_raii.hpp>
 
 namespace Ghost {
 class VulkanInstance {
 private:
-	vk::Instance m_instance;
+	vk::raii::Context m_context;   
+	vk::raii::Instance m_instance;
+
+	std::vector<const char *> checkAndReturnRequiredExtensions();
 
 public:
-	VulkanInstance(){
-		vk::ApplicationInfo appInfo("GhostRenderEngine", VK_MAKE_VERSION(1,0,0), "NoEngine", VK_MAKE_VERSION(1, 0, 0), VK_VERSION_1_0);
-	}
+	VulkanInstance();
+	~VulkanInstance();
 
 };
 } // namespace Ghost
