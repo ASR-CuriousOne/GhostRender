@@ -1,21 +1,21 @@
 #pragma once
 #include <GLFW/glfw3.h>
-#include <vulkan/vulkan.hpp>
-#include <Ghost/windowGLFW.hpp>
+#include <Ghost/vulkanDevice.hpp>
 #include <Ghost/vulkanInstance.hpp>
+#include <Ghost/windowGLFW.hpp>
+#include <vulkan/vulkan.hpp>
 
 namespace Ghost {
 class GhostRender {
-private:
-	WindowGLFW m_window;
-	VulkanInstance m_instance;
+  private:
+    WindowGLFW m_window;
+    VulkanInstance m_instance;
+    VulkanDevice m_device;
 
+  public:
+    GhostRender();
+    ~GhostRender();
 
-public:
-	GhostRender();
-	~GhostRender();
-
-	void run();
-
+    void run();
 };
 } // namespace Ghost
