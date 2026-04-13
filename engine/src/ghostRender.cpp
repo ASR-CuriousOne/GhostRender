@@ -3,7 +3,7 @@
 
 namespace Ghost {
 GhostRender::GhostRender() : m_window(), m_instance(), m_device(m_instance) {
-	std::clog << m_device.getDeviceName() << std::endl;
+    std::clog << m_device.getDeviceName() << std::endl;
 }
 
 GhostRender::~GhostRender() {}

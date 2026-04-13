@@ -19,7 +19,6 @@ vk::DebugUtilsMessengerCreateInfoEXT VulkanInstance::populateDebugCreateInfo() {
 }
 
 VulkanInstance::VulkanInstance() : m_context(), m_instance(nullptr) {
-
     if (m_enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error(
             "Validation layers requested, but not available!");
@@ -42,7 +41,7 @@ VulkanInstance::VulkanInstance() : m_context(), m_instance(nullptr) {
         m_enableValidationLayers ? m_validationLayers.data() : nullptr,
         static_cast<uint32_t>(requiredExtensions.size()),
         requiredExtensions.data(),
-        m_enableValidationLayers ? debugCreateInfo : nullptr);
+        m_enableValidationLayers ? &debugCreateInfo : nullptr);
 
     m_instance = vk::raii::Instance(m_context, createInfo);
 

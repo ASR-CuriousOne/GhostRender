@@ -8,6 +8,7 @@ VulkanDevice::VulkanDevice(const vk::raii::Instance &instance)
         const auto &device = m_physicalDevices[i];
         if (isDeviceSuitable(device)) {
             m_physicalDevice = std::move(device);
+			m_queueFamilyIndicies.findQueueFamily(device);
             break;
         }
     }
@@ -22,7 +23,11 @@ bool VulkanDevice::isDeviceSuitable(
     auto features = physicalDevice.getFeatures();
     auto properties = physicalDevice.getProperties();
 
-    return properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+    QueueFamilyIndicies queueFamilyIndicies;
+    queueFamilyIndicies.findQueueFamily(physicalDevice);
+
+    return properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu &&
+           queueFamilyIndicies.isComplete();
 }
 
 std::string VulkanDevice::getDeviceName() {
