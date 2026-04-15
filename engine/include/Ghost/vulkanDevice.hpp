@@ -6,8 +6,10 @@ namespace Ghost {
 
 struct QueueFamilyIndicies {
     std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentFamily;
 
-    void findQueueFamily(const vk::raii::PhysicalDevice &physicalDevice);
+    void findQueueFamily(const vk::raii::PhysicalDevice &physicalDevice,
+                         const vk::raii::SurfaceKHR &surface);
     bool isComplete();
 };
 
@@ -17,12 +19,15 @@ class VulkanDevice {
     QueueFamilyIndicies m_queueFamilyIndicies;
 
     vk::raii::Device m_device = nullptr;
-	vk::raii::Queue m_graphicsQueue = nullptr;
+    vk::raii::Queue m_graphicsQueue = nullptr;
+	vk::raii::Queue m_presentQueue = nullptr;
 
-    bool isDeviceSuitable(const vk::raii::PhysicalDevice &physicalDevice);
+    bool isDeviceSuitable(const vk::raii::PhysicalDevice &physicalDevice,
+                          const vk::raii::SurfaceKHR &surface);
 
   public:
-    VulkanDevice(const vk::raii::Instance &instance);
+    VulkanDevice(const vk::raii::Instance &instance,
+                 const vk::raii::SurfaceKHR &surface);
     std::string getDeviceName();
 };
 

@@ -1,15 +1,20 @@
 #include <Ghost/vulkanDevice.hpp>
-#include <iostream>
 #include <vulkan/vulkan_to_string.hpp>
 
 namespace Ghost {
 void QueueFamilyIndicies::findQueueFamily(
-    const vk::raii::PhysicalDevice &physicalDevice) {
+    const vk::raii::PhysicalDevice &physicalDevice,
+    const vk::raii::SurfaceKHR &surface) {
     auto queueFamilies = physicalDevice.getQueueFamilyProperties();
     uint32_t i = 0;
     for (const auto &queueFamily : queueFamilies) {
         if (queueFamily.queueFlags & vk::QueueFlags::BitsType::eGraphics) {
             graphicsFamily = i;
+
+            if (physicalDevice.getSurfaceSupportKHR(graphicsFamily.value(),
+                                                    surface)) {
+                presentFamily = i;
+            }
         }
         if (isComplete()) {
             break;
@@ -17,7 +22,23 @@ void QueueFamilyIndicies::findQueueFamily(
 
         i++;
     }
+
+    if (!presentFamily.has_value()) {
+        for (uint32_t presentFamilyIndex = 0;
+             presentFamilyIndex < queueFamilies.size(); presentFamilyIndex++) {
+            if (physicalDevice.getSurfaceSupportKHR(graphicsFamily.value(),
+                                                    surface)) {
+                presentFamily = presentFamilyIndex;
+            }
+
+            if (isComplete()) {
+                break;
+            }
+        }
+    }
 }
 
-bool QueueFamilyIndicies::isComplete() { return graphicsFamily.has_value(); }
+bool QueueFamilyIndicies::isComplete() {
+    return graphicsFamily.has_value() && presentFamily.has_value();
+}
 } // namespace Ghost

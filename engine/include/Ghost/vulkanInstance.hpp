@@ -41,6 +41,7 @@ class VulkanInstance {
   public:
     VulkanInstance();
     ~VulkanInstance();
-    operator const vk::raii::Instance &() { return m_instance; }
+    operator const vk::raii::Instance &() const { return m_instance; }
+    VkInstance operator*() const { return *m_instance; }
 };
 } // namespace Ghost
