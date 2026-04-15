@@ -17,6 +17,7 @@ class VulkanDevice {
     QueueFamilyIndicies m_queueFamilyIndicies;
 
     vk::raii::Device m_device = nullptr;
+	vk::raii::Queue m_graphicsQueue = nullptr;
 
     bool isDeviceSuitable(const vk::raii::PhysicalDevice &physicalDevice);
 

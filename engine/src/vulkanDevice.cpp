@@ -8,7 +8,7 @@ VulkanDevice::VulkanDevice(const vk::raii::Instance &instance)
         const auto &device = m_physicalDevices[i];
         if (isDeviceSuitable(device)) {
             m_physicalDevice = std::move(device);
-			m_queueFamilyIndicies.findQueueFamily(device);
+            m_queueFamilyIndicies.findQueueFamily(device);
             break;
         }
     }
@@ -16,6 +16,20 @@ VulkanDevice::VulkanDevice(const vk::raii::Instance &instance)
     if (!(*m_physicalDevice)) {
         throw std::runtime_error("failed to find a suitable GPU!");
     }
+
+    float queuePriority = 1.0f;
+    vk::DeviceQueueCreateInfo queueCreateInfo(
+        {}, m_queueFamilyIndicies.graphicsFamily.value(), 1, &queuePriority);
+
+    vk::PhysicalDeviceFeatures deviceFeatures;
+
+    vk::DeviceCreateInfo createInfo({}, 1, &queueCreateInfo, 0, nullptr, 0,
+                                    nullptr, &deviceFeatures);
+
+    m_device = vk::raii::Device(m_physicalDevice, createInfo);
+
+    m_graphicsQueue = vk::raii::Queue(
+        m_device, m_queueFamilyIndicies.graphicsFamily.value(), 0);
 }
 
 bool VulkanDevice::isDeviceSuitable(
