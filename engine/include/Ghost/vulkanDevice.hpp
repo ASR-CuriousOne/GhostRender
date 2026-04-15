@@ -14,20 +14,38 @@ struct QueueFamilyIndicies {
 };
 
 class VulkanDevice {
+
     vk::raii::PhysicalDevices m_physicalDevices;
     vk::raii::PhysicalDevice m_physicalDevice = nullptr;
+
+    const std::vector<const char *> m_deviceExtensions = {
+        vk::KHRSwapchainExtensionName};
+
     QueueFamilyIndicies m_queueFamilyIndicies;
 
     vk::raii::Device m_device = nullptr;
+
     vk::raii::Queue m_graphicsQueue = nullptr;
-	vk::raii::Queue m_presentQueue = nullptr;
+    vk::raii::Queue m_presentQueue = nullptr;
 
     bool isDeviceSuitable(const vk::raii::PhysicalDevice &physicalDevice,
                           const vk::raii::SurfaceKHR &surface);
 
+    bool checkExtensions(const vk::raii::PhysicalDevice &physicalDevice);
+
   public:
     VulkanDevice(const vk::raii::Instance &instance,
                  const vk::raii::SurfaceKHR &surface);
+
+    operator const vk::raii::Device &() const { return m_device; }
+    operator const vk::raii::PhysicalDevice &() const {
+        return m_physicalDevice;
+    }
+
+    const QueueFamilyIndicies &getQueueFamilyIndices() const{
+        return m_queueFamilyIndicies;
+    }
+
     std::string getDeviceName();
 };
 

@@ -11,5 +11,6 @@ class GhostSurface {
     GhostSurface(const VulkanInstance &instance, const WindowGLFW &window);
 
     operator const vk::raii::SurfaceKHR &() const { return m_surface; }
+	vk::SurfaceKHR operator*() const { return *m_surface; }
 };
 } // namespace Ghost

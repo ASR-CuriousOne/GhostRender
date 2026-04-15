@@ -1,4 +1,6 @@
+#include "Ghost/swapChainDetails.hpp"
 #include <Ghost/vulkanDevice.hpp>
+#include <iostream>
 #include <set>
 #include <stdexcept>
 
@@ -32,9 +34,10 @@ VulkanDevice::VulkanDevice(const vk::raii::Instance &instance,
 
     vk::PhysicalDeviceFeatures deviceFeatures;
 
-    vk::DeviceCreateInfo createInfo({}, queueCreateInfos.size(),
-                                    queueCreateInfos.data(), 0, nullptr, 0,
-                                    nullptr, &deviceFeatures);
+    vk::DeviceCreateInfo createInfo(
+        {}, queueCreateInfos.size(), queueCreateInfos.data(), 0, nullptr,
+        static_cast<uint32_t>(m_deviceExtensions.size()),
+        m_deviceExtensions.data(), &deviceFeatures);
 
     m_device = vk::raii::Device(m_physicalDevice, createInfo);
 
@@ -53,8 +56,32 @@ bool VulkanDevice::isDeviceSuitable(
     QueueFamilyIndicies queueFamilyIndicies;
     queueFamilyIndicies.findQueueFamily(physicalDevice, surface);
 
+    bool extensionSupported = checkExtensions(physicalDevice);
+
+    bool swapChainAdequate = false;
+    if (extensionSupported) {
+        SwapChainSupportDetails swapChainDetails;
+        swapChainDetails.querySwapChainSupport(physicalDevice, surface);
+        swapChainAdequate = !swapChainDetails.formats.empty() &&
+                            !swapChainDetails.presentModes.empty();
+    }
+
     return properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu &&
-           queueFamilyIndicies.isComplete();
+           queueFamilyIndicies.isComplete() && extensionSupported &&
+           swapChainAdequate;
+}
+
+bool VulkanDevice::checkExtensions(
+    const vk::raii::PhysicalDevice &physicalDevice) {
+    auto availableExtensions =
+        physicalDevice.enumerateDeviceExtensionProperties();
+    std::set<std::string> requiredExtensions(m_deviceExtensions.begin(),
+                                             m_deviceExtensions.end());
+    for (const auto &extension : availableExtensions) {
+        requiredExtensions.erase(extension.extensionName);
+    }
+
+    return requiredExtensions.empty();
 }
 
 std::string VulkanDevice::getDeviceName() {
