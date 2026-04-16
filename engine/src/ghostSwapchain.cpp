@@ -51,6 +51,17 @@ GhostSwapchain::GhostSwapchain(const VulkanDevice &device,
     m_swapchainImages = m_swapchain.getImages();
     m_swapchainImageFormat = surfaceFormat.format;
     m_swapchainExtent = extent;
+
+    m_swapchainImageViews.reserve(m_swapchainImages.size());
+
+    for (const auto &image : m_swapchainImages) {
+        vk::ImageViewCreateInfo createInfo(
+            {}, image, vk::ImageViewType::e2D, m_swapchainImageFormat, {},
+            vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0,
+                                      1));
+
+        m_swapchainImageViews.emplace_back(device, createInfo);
+    }
 }
 
 GhostSwapchain::~GhostSwapchain() {}

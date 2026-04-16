@@ -8,6 +8,7 @@ namespace Ghost {
 class GhostSwapchain {
     vk::raii::SwapchainKHR m_swapchain = nullptr;
     std::vector<vk::Image> m_swapchainImages;
+	std::vector<vk::raii::ImageView> m_swapchainImageViews;
     vk::Format m_swapchainImageFormat;
     vk::Extent2D m_swapchainExtent;
 
