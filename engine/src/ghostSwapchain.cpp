@@ -2,6 +2,7 @@
 #include <Ghost/swapChainDetails.hpp>
 #include <Ghost/vulkanDevice.hpp>
 #include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
 
 namespace Ghost {
 GhostSwapchain::GhostSwapchain(const VulkanDevice &device,
@@ -62,6 +63,39 @@ GhostSwapchain::GhostSwapchain(const VulkanDevice &device,
 
         m_swapchainImageViews.emplace_back(device, createInfo);
     }
+
+    createRenderPass(device);
+}
+
+void GhostSwapchain::createRenderPass(const VulkanDevice &device) {
+    vk::AttachmentDescription colorAttachment;
+
+    colorAttachment.setFormat(m_swapchainImageFormat)
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setInitialLayout(vk::ImageLayout::eUndefined)
+        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+
+    vk::AttachmentReference colorAttachmentRef;
+    colorAttachmentRef.setAttachment(0);
+    colorAttachmentRef.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+
+    vk::SubpassDescription subpass;
+    subpass.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+        .setColorAttachmentCount(1)
+        .setColorAttachments(colorAttachmentRef);
+
+    vk::RenderPassCreateInfo renderPassInfo;
+
+    renderPassInfo.setAttachmentCount(1)
+        .setAttachments(colorAttachment)
+        .setSubpassCount(1)
+        .setSubpasses(subpass);
+
+    m_renderPass = vk::raii::RenderPass(device, renderPassInfo);
 }
 
 GhostSwapchain::~GhostSwapchain() {}

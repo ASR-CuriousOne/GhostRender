@@ -1,17 +1,9 @@
 #pragma once
+#include <Ghost/queueFamilyIndicies.hpp>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
 namespace Ghost {
-
-struct QueueFamilyIndicies {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-
-    void findQueueFamily(const vk::raii::PhysicalDevice &physicalDevice,
-                         const vk::raii::SurfaceKHR &surface);
-    bool isComplete();
-};
 
 class VulkanDevice {
 
@@ -42,7 +34,7 @@ class VulkanDevice {
         return m_physicalDevice;
     }
 
-    const QueueFamilyIndicies &getQueueFamilyIndices() const{
+    const QueueFamilyIndicies &getQueueFamilyIndices() const {
         return m_queueFamilyIndicies;
     }
 
