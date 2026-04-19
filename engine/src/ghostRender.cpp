@@ -5,7 +5,7 @@ namespace Ghost {
 std::atomic<bool> GhostRender::s_quitFlag{false};
 GhostRender::GhostRender()
     : m_window(), m_instance(), m_surface(m_instance, m_window),
-      m_device(m_instance, m_surface) {
+      m_device(m_instance, m_surface), m_commandPool(m_device) {
 
     m_swapchain =
         std::make_unique<GhostSwapchain>(m_device, m_window, m_surface);

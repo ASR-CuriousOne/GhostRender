@@ -1,5 +1,6 @@
 #pragma once
 #include <GLFW/glfw3.h>
+#include <Ghost/ghostCommandPool.hpp>
 #include <Ghost/ghostGraphicsPipeline.hpp>
 #include <Ghost/ghostSurface.hpp>
 #include <Ghost/ghostSwapchain.hpp>
@@ -18,13 +19,14 @@ class GhostRender {
     VulkanInstance m_instance;
     GhostSurface m_surface;
     VulkanDevice m_device;
+    GhostCommandPool m_commandPool;
 
     std::unique_ptr<GhostSwapchain> m_swapchain;
 
     vk::raii::PipelineLayout m_pipelineLayout = nullptr;
 
-	const std::filesystem::path c_vertShaderPath = "./shaders/vert.spv";
-	const std::filesystem::path c_fragShaderPath = "./shaders/frag.spv";
+    const std::filesystem::path c_vertShaderPath = "./shaders/vert.spv";
+    const std::filesystem::path c_fragShaderPath = "./shaders/frag.spv";
     std::unique_ptr<GhostGraphicsPipeline> m_graphicsPipeline;
 
   public:
