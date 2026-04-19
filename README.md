@@ -4,4 +4,6 @@ Hopefully get more than box on screen this time.
 
 ### Current Features
 
-None :( 
+Some :>
+
+Shows a triangle.
