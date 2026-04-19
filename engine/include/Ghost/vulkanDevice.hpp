@@ -1,4 +1,5 @@
 #pragma once
+#include "vulkan/vulkan.hpp"
 #include <Ghost/queueFamilyIndicies.hpp>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
@@ -30,6 +31,7 @@ class VulkanDevice {
                  const vk::raii::SurfaceKHR &surface);
 
     operator const vk::raii::Device &() const { return m_device; }
+    const vk::raii::Device *operator->() const { return &m_device; }
     operator const vk::raii::PhysicalDevice &() const {
         return m_physicalDevice;
     }
@@ -37,6 +39,10 @@ class VulkanDevice {
     const QueueFamilyIndicies &getQueueFamilyIndices() const {
         return m_queueFamilyIndicies;
     }
+
+    void submitGraphicsQueue(const vk::SubmitInfo &submitInfo,
+                             const vk::Fence &fence);
+    vk::Result submitPresentQueue(const vk::PresentInfoKHR &presentInfo);
 
     std::string getDeviceName();
 };

@@ -19,6 +19,8 @@ class GhostGraphicsPipeline {
                           const std::filesystem::path &fragFilepath,
                           const PipelineConfigInfo &configInfo);
     ~GhostGraphicsPipeline();
+
+	vk::Pipeline operator*() const {return *m_graphicsPipeline;}
 };
 
 } // namespace Ghost

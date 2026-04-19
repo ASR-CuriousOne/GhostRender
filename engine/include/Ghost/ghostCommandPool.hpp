@@ -9,5 +9,8 @@ class GhostCommandPool {
   public:
     GhostCommandPool(const VulkanDevice &device);
     ~GhostCommandPool();
+
+    operator const vk::raii::CommandPool &() const { return m_commandPool; }
+    vk::CommandPool operator*() const { return *m_commandPool; }
 };
 } // namespace Ghost

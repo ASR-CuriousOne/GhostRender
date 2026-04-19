@@ -1,7 +1,9 @@
 #pragma once
+#include "vulkan/vulkan.hpp"
 #include <Ghost/ghostSurface.hpp>
 #include <Ghost/vulkanDevice.hpp>
 #include <Ghost/windowGLFW.hpp>
+#include <cstdint>
 #include <vulkan/vulkan_raii.hpp>
 
 namespace Ghost {
@@ -34,7 +36,16 @@ class GhostSwapchain {
                    const GhostSurface &surface);
     ~GhostSwapchain();
 
+    vk::SwapchainKHR operator*() const { return m_swapchain; }
+
+    size_t getImageCount() const { return m_swapchainImages.size(); }
     const vk::Extent2D &getSwapchainExtent() { return m_swapchainExtent; }
     const vk::raii::RenderPass &getRenderPass() { return m_renderPass; }
+    const vk::raii::Framebuffer &getFrameBuffer(uint32_t imageIndex) {
+        return m_frameBuffers[imageIndex];
+    }
+
+    vk::ResultValue<uint32_t>
+    aquireNextImage(const vk::raii::Semaphore &imageAvailableSemaphore);
 };
 } // namespace Ghost

@@ -2,7 +2,9 @@
 #include <Ghost/ghostSwapchain.hpp>
 #include <Ghost/swapChainDetails.hpp>
 #include <Ghost/vulkanDevice.hpp>
+#include <cstdint>
 #include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan_raii.hpp>
 
 namespace Ghost {
@@ -91,12 +93,22 @@ void GhostSwapchain::createRenderPass(const VulkanDevice &device) {
         .setColorAttachmentCount(1)
         .setColorAttachments(colorAttachmentRef);
 
+    vk::SubpassDependency dependancy;
+
+    dependancy.setSrcSubpass(vk::SubpassExternal)
+        .setDstSubpass(0)
+        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+        .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
+
     vk::RenderPassCreateInfo renderPassInfo;
 
     renderPassInfo.setAttachmentCount(1)
         .setAttachments(colorAttachment)
         .setSubpassCount(1)
-        .setSubpasses(subpass);
+        .setSubpasses(subpass)
+        .setDependencyCount(1)
+        .setDependencies(dependancy);
 
     m_renderPass = vk::raii::RenderPass(device, renderPassInfo);
 }
@@ -165,6 +177,11 @@ GhostSwapchain::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities,
 
         return actualExtent;
     }
+}
+
+vk::ResultValue<uint32_t> GhostSwapchain::aquireNextImage(
+    const vk::raii::Semaphore &imageAvailableSemaphore) {
+    return m_swapchain.acquireNextImage(UINT32_MAX,imageAvailableSemaphore);
 }
 
 } // namespace Ghost

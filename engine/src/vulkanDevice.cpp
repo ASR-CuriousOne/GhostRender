@@ -87,4 +87,14 @@ bool VulkanDevice::checkExtensions(
 std::string VulkanDevice::getDeviceName() {
     return m_physicalDevice.getProperties().deviceName;
 }
+
+void VulkanDevice::submitGraphicsQueue(const vk::SubmitInfo &submitInfo,
+                                       const vk::Fence &fence) {
+    m_graphicsQueue.submit(submitInfo, fence);
+}
+
+vk::Result
+VulkanDevice::submitPresentQueue(const vk::PresentInfoKHR &presentInfo) {
+    return m_presentQueue.presentKHR(presentInfo);
+}
 } // namespace Ghost
