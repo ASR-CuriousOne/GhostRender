@@ -14,6 +14,8 @@ class GhostSwapchain {
 
     vk::raii::RenderPass m_renderPass = nullptr;
 
+    std::vector<vk::raii::Framebuffer> m_frameBuffers;
+
     vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
         std::vector<vk::SurfaceFormatKHR> &availableFormats);
 
@@ -25,6 +27,7 @@ class GhostSwapchain {
                      const WindowGLFW &window);
 
     void createRenderPass(const VulkanDevice &device);
+    void createFrameBuffers(const VulkanDevice &device);
 
   public:
     GhostSwapchain(const VulkanDevice &device, const WindowGLFW &window,

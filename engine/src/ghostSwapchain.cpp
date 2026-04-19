@@ -1,3 +1,4 @@
+#include "vulkan/vulkan.hpp"
 #include <Ghost/ghostSwapchain.hpp>
 #include <Ghost/swapChainDetails.hpp>
 #include <Ghost/vulkanDevice.hpp>
@@ -65,6 +66,8 @@ GhostSwapchain::GhostSwapchain(const VulkanDevice &device,
     }
 
     createRenderPass(device);
+
+    createFrameBuffers(device);
 }
 
 void GhostSwapchain::createRenderPass(const VulkanDevice &device) {
@@ -96,6 +99,23 @@ void GhostSwapchain::createRenderPass(const VulkanDevice &device) {
         .setSubpasses(subpass);
 
     m_renderPass = vk::raii::RenderPass(device, renderPassInfo);
+}
+
+void GhostSwapchain::createFrameBuffers(const VulkanDevice &device) {
+    m_frameBuffers.reserve(m_swapchainImageViews.size());
+
+    for (const auto &imageView : m_swapchainImageViews) {
+        vk::FramebufferCreateInfo createInfo;
+
+        createInfo.setRenderPass(m_renderPass)
+            .setAttachmentCount(1)
+            .setAttachments(*imageView)
+            .setWidth(m_swapchainExtent.width)
+            .setHeight(m_swapchainExtent.height)
+            .setLayers(1);
+
+        m_frameBuffers.emplace_back(vk::raii::Framebuffer(device, createInfo));
+    }
 }
 
 GhostSwapchain::~GhostSwapchain() {}
