@@ -129,8 +129,15 @@ void GhostRender::drawFrame() {
     m_device->waitForFences({*m_inFlightFences[m_currentFrame]}, vk::True,
                             std::numeric_limits<uint64_t>::max());
 
-    auto [result, imageIndex] = m_swapchain->aquireNextImage(
-        m_imageAvailableSemaphores[m_currentFrame]);
+    uint32_t imageIndex;
+    try {
+        auto resultValue = m_swapchain->aquireNextImage(
+            m_imageAvailableSemaphores[m_currentFrame]);
+        imageIndex = resultValue.value;
+    } catch (const vk::OutOfDateKHRError &e) {
+        recreateSwapchain();
+        return;
+    }
 
     m_device->resetFences({*m_inFlightFences[m_currentFrame]});
 
@@ -155,9 +162,45 @@ void GhostRender::drawFrame() {
     vk::PresentInfoKHR presentInfo(1, signalSemaphores, 1, swapchains,
                                    &imageIndex);
 
-    m_device.submitPresentQueue(presentInfo);
+    try {
+        vk::Result result = m_device.submitPresentQueue(presentInfo);
+
+        if (result == vk::Result::eSuboptimalKHR ||
+            m_window.m_framebufferResized) {
+            m_window.m_framebufferResized = false;
+            recreateSwapchain();
+        }
+    } catch (const vk::OutOfDateKHRError &e) {
+        m_window.m_framebufferResized = false;
+        recreateSwapchain();
+    }
 
     m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void GhostRender::recreateSwapchain() {
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(m_window, &width, &height);
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(m_window, &width, &height);
+        glfwWaitEvents();
+    }
+
+    m_device->waitIdle();
+
+    m_graphicsPipeline.reset();
+    m_swapchain.reset();
+
+    m_swapchain =
+        std::make_unique<GhostSwapchain>(m_device, m_window, m_surface);
+
+    PipelineConfigInfo pipelineConfigInfo;
+    PipelineConfigInfo::defaultConfig(pipelineConfigInfo);
+    pipelineConfigInfo.renderPass = m_swapchain->getRenderPass();
+    pipelineConfigInfo.pipelineLayout = m_pipelineLayout;
+
+    m_graphicsPipeline = std::make_unique<GhostGraphicsPipeline>(
+        m_device, c_vertShaderPath, c_fragShaderPath, pipelineConfigInfo);
 }
 
 } // namespace Ghost

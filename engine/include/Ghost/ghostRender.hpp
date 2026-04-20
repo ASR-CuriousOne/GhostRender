@@ -47,6 +47,8 @@ class GhostRender {
 
     void drawFrame();
 
+	void recreateSwapchain();
+
   public:
     static std::atomic<bool> s_quitFlag;
     GhostRender();

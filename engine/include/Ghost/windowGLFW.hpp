@@ -3,14 +3,19 @@
 
 namespace Ghost {
 struct WindowGLFW {
-	const uint32_t WIDTH = 800;
-	const uint32_t HEIGHT = 600;
+    GLFWwindow *m_window;
 
-  GLFWwindow *m_window;
+    const uint32_t WIDTH = 800;
+    const uint32_t HEIGHT = 600;
 
-  WindowGLFW();
-  ~WindowGLFW();
+    bool m_framebufferResized = false;
 
-	operator GLFWwindow*() const {return m_window;}
+    WindowGLFW();
+    ~WindowGLFW();
+
+    operator GLFWwindow *() const { return m_window; }
+
+    static void framebufferResizeCallback(GLFWwindow *window, int width,
+                                          int height);
 };
 } // namespace Ghost

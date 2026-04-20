@@ -2,17 +2,23 @@
 
 namespace Ghost {
 WindowGLFW::WindowGLFW() {
-  glfwInit();
+    glfwInit();
 
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-  m_window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+    m_window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
 }
 
 WindowGLFW::~WindowGLFW() {
-  glfwDestroyWindow(m_window);
+    glfwDestroyWindow(m_window);
 
-  glfwTerminate();
+    glfwTerminate();
+}
+
+void WindowGLFW::framebufferResizeCallback(GLFWwindow *window, int width,
+                                           int height) {
+    auto app = reinterpret_cast<WindowGLFW *>(glfwGetWindowUserPointer(window));
+    app->m_framebufferResized = true;
 }
 } // namespace Ghost
