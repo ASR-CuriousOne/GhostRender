@@ -40,6 +40,8 @@ class VulkanDevice {
         return m_queueFamilyIndicies;
     }
 
+	uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
+
     void submitGraphicsQueue(const vk::SubmitInfo &submitInfo,
                              const vk::Fence &fence);
     vk::Result submitPresentQueue(const vk::PresentInfoKHR &presentInfo);
