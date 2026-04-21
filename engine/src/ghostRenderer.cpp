@@ -10,6 +10,10 @@ GhostRenderer::GhostRenderer(WindowGLFW &window, VulkanDevice &device,
       m_commandPool(device) {
     m_swapchain =
         std::make_unique<GhostSwapchain>(m_device, m_window, m_surface);
+
+    createRenderPass();
+    createFramebuffers();
+
     createCommandBuffers();
     createSyncObjects();
 }
@@ -44,6 +48,65 @@ void GhostRenderer::createSyncObjects() {
     }
 }
 
+void GhostRenderer::createRenderPass() {
+    vk::AttachmentDescription colorAttachment;
+
+    colorAttachment.setFormat(m_swapchain->getSwapchainImageFormat())
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eStore)
+        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setInitialLayout(vk::ImageLayout::eUndefined)
+        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+
+    vk::AttachmentReference colorAttachmentRef;
+    colorAttachmentRef.setAttachment(0);
+    colorAttachmentRef.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+
+    vk::SubpassDescription subpass;
+    subpass.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+        .setColorAttachmentCount(1)
+        .setColorAttachments(colorAttachmentRef);
+
+    vk::SubpassDependency dependancy;
+
+    dependancy.setSrcSubpass(vk::SubpassExternal)
+        .setDstSubpass(0)
+        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+        .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
+
+    vk::RenderPassCreateInfo renderPassInfo;
+
+    renderPassInfo.setAttachmentCount(1)
+        .setAttachments(colorAttachment)
+        .setSubpassCount(1)
+        .setSubpasses(subpass)
+        .setDependencyCount(1)
+        .setDependencies(dependancy);
+
+    m_renderPass = vk::raii::RenderPass(m_device, renderPassInfo);
+}
+
+void GhostRenderer::createFramebuffers() {
+    m_framebuffers.clear();
+    m_framebuffers.reserve(m_swapchain->getImageCount());
+
+    for (size_t i = 0; i < m_swapchain->getImageCount(); i++) {
+        vk::FramebufferCreateInfo createInfo;
+        createInfo.setRenderPass(*m_renderPass)
+            .setAttachmentCount(1)
+            .setAttachments(*m_swapchain->getImageView(i))
+            .setWidth(m_swapchain->getSwapchainExtent().width)
+            .setHeight(m_swapchain->getSwapchainExtent().height)
+            .setLayers(1);
+
+        m_framebuffers.emplace_back(
+            vk::raii::Framebuffer(m_device, createInfo));
+    }
+}
+
 void GhostRenderer::recreateSwapchain() {
     int width = 0, height = 0;
     glfwGetFramebufferSize(m_window, &width, &height);
@@ -57,6 +120,7 @@ void GhostRenderer::recreateSwapchain() {
 
     m_swapchain =
         std::make_unique<GhostSwapchain>(m_device, m_window, m_surface);
+    createFramebuffers();
 }
 
 vk::raii::CommandBuffer &GhostRenderer::beginFrame() {
@@ -130,8 +194,8 @@ void GhostRenderer::endFrame() {
 void GhostRenderer::beginSwapChainRenderPass(
     const vk::raii::CommandBuffer &commandBuffer) {
     vk::RenderPassBeginInfo renderPassInfo;
-    renderPassInfo.setRenderPass(m_swapchain->getRenderPass())
-        .setFramebuffer(m_swapchain->getFrameBuffer(m_currentImageIndex));
+    renderPassInfo.setRenderPass(m_renderPass)
+        .setFramebuffer(m_framebuffers[m_currentImageIndex]);
     renderPassInfo.renderArea.offset.setX(0.0f).setY(0.0f);
     renderPassInfo.renderArea.setExtent(m_swapchain->getSwapchainExtent());
 

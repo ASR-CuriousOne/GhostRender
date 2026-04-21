@@ -23,9 +23,7 @@ class GhostRenderer {
     void endSwapChainRenderPass(const vk::raii::CommandBuffer &commandBuffer);
 
     int getFrameIndex() const { return m_currentFrame; }
-    vk::RenderPass getSwapChainRenderPass() const {
-        return m_swapchain->getRenderPass();
-    }
+    vk::RenderPass getSwapChainRenderPass() const { return m_renderPass; }
 
     bool isFrameInProgress() { return m_isFrameStarted; }
 
@@ -34,6 +32,9 @@ class GhostRenderer {
     void createSyncObjects();
     void recreateSwapchain();
 
+    void createRenderPass();
+    void createFramebuffers();
+
     WindowGLFW &m_window;
     VulkanDevice &m_device;
     GhostSurface &m_surface;
@@ -41,6 +42,9 @@ class GhostRenderer {
     std::unique_ptr<GhostSwapchain> m_swapchain;
     GhostCommandPool m_commandPool;
     std::vector<vk::raii::CommandBuffer> m_commandBuffers;
+
+    vk::raii::RenderPass m_renderPass = nullptr;
+    std::vector<vk::raii::Framebuffer> m_framebuffers;
 
     std::vector<vk::raii::Semaphore> m_imageAvailableSemaphores;
     std::vector<vk::raii::Semaphore> m_renderFinishedSemaphores;

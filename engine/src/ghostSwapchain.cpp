@@ -66,69 +66,7 @@ GhostSwapchain::GhostSwapchain(const VulkanDevice &device,
 
         m_swapchainImageViews.emplace_back(device, createInfo);
     }
-
-    createRenderPass(device);
-
-    createFrameBuffers(device);
-}
-
-void GhostSwapchain::createRenderPass(const VulkanDevice &device) {
-    vk::AttachmentDescription colorAttachment;
-
-    colorAttachment.setFormat(m_swapchainImageFormat)
-        .setSamples(vk::SampleCountFlagBits::e1)
-        .setLoadOp(vk::AttachmentLoadOp::eClear)
-        .setStoreOp(vk::AttachmentStoreOp::eStore)
-        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-        .setInitialLayout(vk::ImageLayout::eUndefined)
-        .setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-
-    vk::AttachmentReference colorAttachmentRef;
-    colorAttachmentRef.setAttachment(0);
-    colorAttachmentRef.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
-
-    vk::SubpassDescription subpass;
-    subpass.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-        .setColorAttachmentCount(1)
-        .setColorAttachments(colorAttachmentRef);
-
-    vk::SubpassDependency dependancy;
-
-    dependancy.setSrcSubpass(vk::SubpassExternal)
-        .setDstSubpass(0)
-        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-        .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
-
-    vk::RenderPassCreateInfo renderPassInfo;
-
-    renderPassInfo.setAttachmentCount(1)
-        .setAttachments(colorAttachment)
-        .setSubpassCount(1)
-        .setSubpasses(subpass)
-        .setDependencyCount(1)
-        .setDependencies(dependancy);
-
-    m_renderPass = vk::raii::RenderPass(device, renderPassInfo);
-}
-
-void GhostSwapchain::createFrameBuffers(const VulkanDevice &device) {
-    m_frameBuffers.reserve(m_swapchainImageViews.size());
-
-    for (const auto &imageView : m_swapchainImageViews) {
-        vk::FramebufferCreateInfo createInfo;
-
-        createInfo.setRenderPass(m_renderPass)
-            .setAttachmentCount(1)
-            .setAttachments(*imageView)
-            .setWidth(m_swapchainExtent.width)
-            .setHeight(m_swapchainExtent.height)
-            .setLayers(1);
-
-        m_frameBuffers.emplace_back(vk::raii::Framebuffer(device, createInfo));
-    }
-}
+}   
 
 GhostSwapchain::~GhostSwapchain() {}
 
