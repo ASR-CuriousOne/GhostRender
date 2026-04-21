@@ -1,6 +1,6 @@
-#include "vulkan/vulkan.hpp"
 #include <GLFW/glfw3.h>
 #include <Ghost/ghostRender.hpp>
+#include <Ghost/utils.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
 namespace Ghost {
@@ -31,8 +31,17 @@ GhostRender::GhostRender()
     pipelineConfigInfo.renderPass = m_swapchain->getRenderPass();
     pipelineConfigInfo.pipelineLayout = m_pipelineLayout;
 
+    auto envVars = Utils::loadEnvFile(".env");
+
+    m_vertShaderPath = envVars.contains("VERT_SHADER_PATH")
+                           ? envVars["VERT_SHADER_PATH"]
+                           : "./shaders/vert.spv";
+    m_fragShaderPath = envVars.contains("FRAG_SHADER_PATH")
+                           ? envVars["FRAG_SHADER_PATH"]
+                           : "./shaders/frag.spv";
+
     m_graphicsPipeline = std::make_unique<GhostGraphicsPipeline>(
-        m_device, c_vertShaderPath, c_fragShaderPath, pipelineConfigInfo);
+        m_device, m_vertShaderPath, m_fragShaderPath, pipelineConfigInfo);
 
     std::clog << m_device.getDeviceName() << std::endl;
 }
@@ -200,7 +209,7 @@ void GhostRender::recreateSwapchain() {
     pipelineConfigInfo.pipelineLayout = m_pipelineLayout;
 
     m_graphicsPipeline = std::make_unique<GhostGraphicsPipeline>(
-        m_device, c_vertShaderPath, c_fragShaderPath, pipelineConfigInfo);
+        m_device, m_vertShaderPath, m_fragShaderPath, pipelineConfigInfo);
 }
 
 } // namespace Ghost

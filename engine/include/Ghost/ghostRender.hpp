@@ -28,14 +28,14 @@ class GhostRender {
     std::vector<vk::raii::Semaphore> m_imageAvailableSemaphores;
     std::vector<vk::raii::Semaphore> m_renderFinishedSemaphores;
     std::vector<vk::raii::Fence> m_inFlightFences;
-	uint32_t m_currentFrame = 0;
+    uint32_t m_currentFrame = 0;
 
     std::unique_ptr<GhostSwapchain> m_swapchain;
 
     vk::raii::PipelineLayout m_pipelineLayout = nullptr;
 
-    const std::filesystem::path c_vertShaderPath = "./shaders/vert.spv";
-    const std::filesystem::path c_fragShaderPath = "./shaders/frag.spv";
+    std::filesystem::path m_vertShaderPath = "./shaders/vert.spv";
+    std::filesystem::path m_fragShaderPath = "./shaders/frag.spv";
     std::unique_ptr<GhostGraphicsPipeline> m_graphicsPipeline;
 
     void createCommandBuffer();
@@ -47,7 +47,7 @@ class GhostRender {
 
     void drawFrame();
 
-	void recreateSwapchain();
+    void recreateSwapchain();
 
   public:
     static std::atomic<bool> s_quitFlag;
