@@ -20,6 +20,9 @@ class VulkanDevice {
 
     vk::raii::Queue m_graphicsQueue = nullptr;
     vk::raii::Queue m_presentQueue = nullptr;
+    vk::raii::Queue m_transferQueue = nullptr;
+
+    vk::raii::CommandPool m_transferCommandPool = nullptr;
 
     bool isDeviceSuitable(const vk::raii::PhysicalDevice &physicalDevice,
                           const vk::raii::SurfaceKHR &surface);
@@ -40,13 +43,17 @@ class VulkanDevice {
         return m_queueFamilyIndicies;
     }
 
-	uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
+    uint32_t findMemoryType(uint32_t typeFilter,
+                            vk::MemoryPropertyFlags properties) const;
 
     void submitGraphicsQueue(const vk::SubmitInfo &submitInfo,
                              const vk::Fence &fence);
     vk::Result submitPresentQueue(const vk::PresentInfoKHR &presentInfo);
 
     std::string getDeviceName();
+
+    vk::raii::CommandBuffer beginSingleTimeCommands();
+    void endSingleTimeCommands(const vk::raii::CommandBuffer &commandBuffer);
 };
 
 } // namespace Ghost

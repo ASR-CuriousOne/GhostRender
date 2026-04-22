@@ -23,7 +23,8 @@ VulkanDevice::VulkanDevice(const vk::raii::Instance &instance,
 
     std::set<uint32_t> uniqueQueueFamilyIndicies = {
         m_queueFamilyIndicies.graphicsFamily.value(),
-        m_queueFamilyIndicies.presentFamily.value()};
+        m_queueFamilyIndicies.presentFamily.value(),
+        m_queueFamilyIndicies.transferFamily.value()};
 
     float queuePriority = 1.0f;
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
@@ -45,6 +46,15 @@ VulkanDevice::VulkanDevice(const vk::raii::Instance &instance,
         m_device, m_queueFamilyIndicies.graphicsFamily.value(), 0);
     m_presentQueue = vk::raii::Queue(
         m_device, m_queueFamilyIndicies.presentFamily.value(), 0);
+
+    m_transferQueue = vk::raii::Queue(
+        m_device, m_queueFamilyIndicies.transferFamily.value(), 0);
+
+    vk::CommandPoolCreateInfo poolInfo;
+    poolInfo.setFlags(vk::CommandPoolCreateFlagBits::eTransient)
+        .setQueueFamilyIndex(m_queueFamilyIndicies.transferFamily.value());
+
+    m_transferCommandPool = vk::raii::CommandPool(m_device, poolInfo);
 }
 
 bool VulkanDevice::isDeviceSuitable(
@@ -111,5 +121,32 @@ VulkanDevice::findMemoryType(uint32_t typeFilter,
         }
     }
     throw std::runtime_error("Failed to find suitable memory type!");
+}
+
+vk::raii::CommandBuffer VulkanDevice::beginSingleTimeCommands() {
+    vk::CommandBufferAllocateInfo allocInfo;
+    allocInfo.setLevel(vk::CommandBufferLevel::ePrimary)
+        .setCommandPool(*m_transferCommandPool)
+        .setCommandBufferCount(1);
+
+    vk::raii::CommandBuffers commandBuffers(m_device, allocInfo);
+    vk::raii::CommandBuffer commandBuffer = std::move(commandBuffers[0]);
+
+    vk::CommandBufferBeginInfo beginInfo;
+    beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+    commandBuffer.begin(beginInfo);
+
+    return commandBuffer;
+}
+
+void VulkanDevice::endSingleTimeCommands(
+    const vk::raii::CommandBuffer &commandBuffer) {
+    commandBuffer.end();
+
+    vk::SubmitInfo submitInfo;
+    submitInfo.setCommandBufferCount(1).setPCommandBuffers(&*commandBuffer);
+
+    m_transferQueue.submit({submitInfo}, nullptr);
+    m_transferQueue.waitIdle();
 }
 } // namespace Ghost

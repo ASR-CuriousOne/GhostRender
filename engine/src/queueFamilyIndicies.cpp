@@ -15,7 +15,15 @@ void QueueFamilyIndicies::findQueueFamily(
                                                     surface)) {
                 presentFamily = i;
             }
+        } else if (queueFamily.queueFlags &
+                   vk::QueueFlags::BitsType::eTransfer) {
+            transferFamily = i;
         }
+
+        if (!transferFamily.has_value() && graphicsFamily.has_value()) {
+            transferFamily = graphicsFamily;
+        }
+
         if (isComplete()) {
             break;
         }
@@ -39,6 +47,7 @@ void QueueFamilyIndicies::findQueueFamily(
 }
 
 bool QueueFamilyIndicies::isComplete() {
-    return graphicsFamily.has_value() && presentFamily.has_value();
+    return graphicsFamily.has_value() && presentFamily.has_value() &&
+           transferFamily.has_value();
 }
 } // namespace Ghost
