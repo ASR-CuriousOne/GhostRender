@@ -3,10 +3,13 @@
 
 namespace Ghost {
 struct PipelineConfigInfo {
-	std::vector<vk::DynamicState> dynamicStateEnables;
+    std::vector<vk::DynamicState> dynamicStateEnables;
+
+    std::vector<vk::VertexInputBindingDescription> bindingDescriptions;
+    std::vector<vk::VertexInputAttributeDescription> attributeDescriptions;
 
     vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo;
-	vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+    vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
     vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
     vk::PipelineViewportStateCreateInfo viewportInfo;
     vk::PipelineRasterizationStateCreateInfo rasterizationInfo;
@@ -19,7 +22,7 @@ struct PipelineConfigInfo {
     vk::RenderPass renderPass = nullptr;
     uint32_t subpass = 0;
 
-	static PipelineConfigInfo defaultConfig(PipelineConfigInfo &defaultConfig);
+    static PipelineConfigInfo defaultConfig(PipelineConfigInfo &defaultConfig);
 };
 
 } // namespace Ghost

@@ -1,4 +1,5 @@
 #include <Ghost/ghostApp.hpp>
+#include <Ghost/ghostModel.hpp>
 #include <Ghost/utils.hpp>
 
 namespace Ghost {
@@ -23,6 +24,11 @@ GhostApp::GhostApp()
         .setPushConstantRangeCount(0)
         .setPushConstantRanges(nullptr);
 
+    std::vector<Ghost::Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 1.0f, 0.0f}},
+                                           {{0.5f, 0.5f}, {0.0f, 1.0f, 1.0f}},
+                                           {{-0.5f, 0.5f}, {1.0f, 0.0f, 1.0f}}};
+    m_model = std::make_unique<GhostModel>(m_device, vertices);
+
     m_pipelineLayout =
         vk::raii::PipelineLayout(m_device, pipelineLayoutCreateInfo);
     PipelineConfigInfo pipelineConfigInfo;
@@ -30,10 +36,18 @@ GhostApp::GhostApp()
     pipelineConfigInfo.renderPass = m_renderer.getSwapChainRenderPass();
     pipelineConfigInfo.pipelineLayout = m_pipelineLayout;
 
+    pipelineConfigInfo.bindingDescriptions = Vertex::getBindingDescriptions();
+    pipelineConfigInfo.attributeDescriptions =
+        Vertex::getAttributeDescriptions();
+    pipelineConfigInfo.vertexInputInfo
+        .setVertexBindingDescriptions(pipelineConfigInfo.bindingDescriptions)
+        .setVertexAttributeDescriptions(
+            pipelineConfigInfo.attributeDescriptions);
+
     m_graphicsPipeline = std::make_unique<GhostGraphicsPipeline>(
         m_device, m_vertShaderPath, m_fragShaderPath, pipelineConfigInfo);
 
-	std::clog << m_device.getDeviceName() << std::endl;
+    std::clog << m_device.getDeviceName() << std::endl;
 }
 
 GhostApp::~GhostApp() {}
@@ -49,7 +63,8 @@ void GhostApp::run() {
 
             commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
                                        **m_graphicsPipeline);
-            commandBuffer.draw(3, 1, 0, 0);
+            m_model->bind(commandBuffer);
+            m_model->draw(commandBuffer);
 
             m_renderer.endSwapChainRenderPass(commandBuffer);
             m_renderer.endFrame();

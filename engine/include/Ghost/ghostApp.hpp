@@ -5,6 +5,7 @@
 #include <Ghost/vulkanDevice.hpp>
 #include <Ghost/vulkanInstance.hpp>
 #include <Ghost/windowGLFW.hpp>
+#include <Ghost/ghostModel.hpp>
 #include <atomic>
 #include <filesystem>
 
@@ -29,5 +30,7 @@ class GhostApp {
 
     std::filesystem::path m_vertShaderPath;
     std::filesystem::path m_fragShaderPath;
+
+    std::unique_ptr<GhostModel> m_model;
 };
 } // namespace Ghost
