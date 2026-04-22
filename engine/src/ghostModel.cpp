@@ -1,3 +1,4 @@
+#include "Ghost/ghostBuffer.hpp"
 #include <Ghost/ghostModel.hpp>
 
 namespace Ghost {
@@ -27,18 +28,33 @@ Vertex::getAttributeDescriptions() {
     return attributeDescriptions;
 }
 
-GhostModel::GhostModel(const VulkanDevice &device,
+GhostModel::GhostModel(VulkanDevice &device,
                        const std::vector<Vertex> &vertices)
     : m_device(device), m_vertexCount(static_cast<uint32_t>(vertices.size())) {
 
     vk::DeviceSize bufferSize = sizeof(vertices[0]) * m_vertexCount;
 
-    m_vertexBuffer = std::make_unique<GhostBuffer>(
-        m_device, bufferSize, vk::BufferUsageFlagBits::eVertexBuffer,
-        vk::MemoryPropertyFlagBits::eHostVisible |
-            vk::MemoryPropertyFlagBits::eHostCoherent);
+    GhostBuffer stagingBuffer(m_device, bufferSize,
+                              vk::BufferUsageFlagBits::eTransferSrc,
+                              vk::MemoryPropertyFlagBits::eHostVisible |
+                                  vk::MemoryPropertyFlagBits::eHostCoherent);
 
-    m_vertexBuffer->writeToBuffer(std::span<const Vertex>(vertices));
+    stagingBuffer.writeToBuffer(std::span<const Vertex>(vertices));
+
+    m_vertexBuffer = std::make_unique<GhostBuffer>(
+        m_device, bufferSize,
+        vk::BufferUsageFlagBits::eTransferDst |
+            vk::BufferUsageFlagBits::eVertexBuffer,
+        vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+    auto commandBuffer = m_device.beginSingleTimeCommands();
+
+    vk::BufferCopy copyRegion;
+    copyRegion.setSrcOffset(0).setDstOffset(0).setSize(bufferSize);
+    commandBuffer.copyBuffer(stagingBuffer.getBuffer(),
+                             m_vertexBuffer->getBuffer(), copyRegion);
+
+    m_device.endSingleTimeCommands(commandBuffer);
 }
 
 GhostModel::~GhostModel() {}

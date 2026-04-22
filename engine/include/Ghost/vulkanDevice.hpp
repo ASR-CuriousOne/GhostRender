@@ -52,8 +52,8 @@ class VulkanDevice {
 
     std::string getDeviceName();
 
-    vk::raii::CommandBuffer beginSingleTimeCommands();
-    void endSingleTimeCommands(const vk::raii::CommandBuffer &commandBuffer);
+    vk::raii::CommandBuffer beginSingleTimeCommands() const;
+    void endSingleTimeCommands(const vk::raii::CommandBuffer &commandBuffer) const;
 };
 
 } // namespace Ghost

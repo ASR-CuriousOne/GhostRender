@@ -123,7 +123,7 @@ VulkanDevice::findMemoryType(uint32_t typeFilter,
     throw std::runtime_error("Failed to find suitable memory type!");
 }
 
-vk::raii::CommandBuffer VulkanDevice::beginSingleTimeCommands() {
+vk::raii::CommandBuffer VulkanDevice::beginSingleTimeCommands() const {
     vk::CommandBufferAllocateInfo allocInfo;
     allocInfo.setLevel(vk::CommandBufferLevel::ePrimary)
         .setCommandPool(*m_transferCommandPool)
@@ -140,7 +140,7 @@ vk::raii::CommandBuffer VulkanDevice::beginSingleTimeCommands() {
 }
 
 void VulkanDevice::endSingleTimeCommands(
-    const vk::raii::CommandBuffer &commandBuffer) {
+    const vk::raii::CommandBuffer &commandBuffer) const {
     commandBuffer.end();
 
     vk::SubmitInfo submitInfo;

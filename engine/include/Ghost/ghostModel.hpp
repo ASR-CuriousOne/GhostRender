@@ -15,7 +15,7 @@ struct Vertex {
 
 class GhostModel {
   public:
-    GhostModel(const VulkanDevice &device, const std::vector<Vertex> &vertices);
+    GhostModel(VulkanDevice &device, const std::vector<Vertex> &vertices);
     ~GhostModel();
 
     GhostModel(const GhostModel &) = delete;
