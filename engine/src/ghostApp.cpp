@@ -24,10 +24,13 @@ GhostApp::GhostApp()
         .setPushConstantRangeCount(0)
         .setPushConstantRanges(nullptr);
 
-    std::vector<Ghost::Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 1.0f, 0.0f}},
-                                           {{0.5f, 0.5f}, {0.0f, 1.0f, 1.0f}},
-                                           {{-0.5f, 0.5f}, {1.0f, 0.0f, 1.0f}}};
-    m_model = std::make_unique<GhostModel>(m_device, vertices);
+    const std::vector<Vertex> vertices = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+                                          {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+                                          {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+                                          {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+    const std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
+
+    m_model = std::make_unique<GhostModel>(m_device, vertices, indices);
 
     m_pipelineLayout =
         vk::raii::PipelineLayout(m_device, pipelineLayoutCreateInfo);

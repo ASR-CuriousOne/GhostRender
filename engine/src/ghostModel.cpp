@@ -1,5 +1,7 @@
-#include "Ghost/ghostBuffer.hpp"
+#include "vulkan/vulkan.hpp"
+#include <Ghost/ghostBuffer.hpp>
 #include <Ghost/ghostModel.hpp>
+#include <memory>
 
 namespace Ghost {
 std::vector<vk::VertexInputBindingDescription>
@@ -29,17 +31,19 @@ Vertex::getAttributeDescriptions() {
 }
 
 GhostModel::GhostModel(VulkanDevice &device,
-                       const std::vector<Vertex> &vertices)
-    : m_device(device), m_vertexCount(static_cast<uint32_t>(vertices.size())) {
+                       const std::vector<Vertex> &vertices,
+                       const std::vector<uint32_t> &indicies)
+    : m_device(device), m_vertexCount(static_cast<uint32_t>(vertices.size())),
+      m_indexCount(static_cast<uint32_t>(indicies.size())) {
 
     vk::DeviceSize bufferSize = sizeof(vertices[0]) * m_vertexCount;
 
-    GhostBuffer stagingBuffer(m_device, bufferSize,
-                              vk::BufferUsageFlagBits::eTransferSrc,
-                              vk::MemoryPropertyFlagBits::eHostVisible |
-                                  vk::MemoryPropertyFlagBits::eHostCoherent);
+    GhostBuffer stagingVertexBuffer(
+        m_device, bufferSize, vk::BufferUsageFlagBits::eTransferSrc,
+        vk::MemoryPropertyFlagBits::eHostVisible |
+            vk::MemoryPropertyFlagBits::eHostCoherent);
 
-    stagingBuffer.writeToBuffer(std::span<const Vertex>(vertices));
+    stagingVertexBuffer.writeToBuffer(std::span<const Vertex>(vertices));
 
     m_vertexBuffer = std::make_unique<GhostBuffer>(
         m_device, bufferSize,
@@ -51,8 +55,31 @@ GhostModel::GhostModel(VulkanDevice &device,
 
     vk::BufferCopy copyRegion;
     copyRegion.setSrcOffset(0).setDstOffset(0).setSize(bufferSize);
-    commandBuffer.copyBuffer(stagingBuffer.getBuffer(),
+    commandBuffer.copyBuffer(stagingVertexBuffer.getBuffer(),
                              m_vertexBuffer->getBuffer(), copyRegion);
+
+    m_device.endSingleTimeCommands(commandBuffer);
+
+    vk::DeviceSize indexBufferSize = sizeof(uint32_t) * m_indexCount;
+    GhostBuffer stagingIndexBuffer(
+        m_device, indexBufferSize, vk::BufferUsageFlagBits::eTransferSrc,
+        vk::MemoryPropertyFlagBits::eHostVisible |
+            vk::MemoryPropertyFlagBits::eHostCoherent);
+
+    stagingIndexBuffer.writeToBuffer(std::span<const uint32_t>(indicies));
+
+    m_indexBuffer =
+        std::make_unique<GhostBuffer>(m_device, indexBufferSize,
+                                      vk::BufferUsageFlagBits::eTransferDst |
+                                          vk::BufferUsageFlagBits::eIndexBuffer,
+                                      vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+    commandBuffer = m_device.beginSingleTimeCommands();
+
+    vk::BufferCopy indexCopyRegion;
+    indexCopyRegion.setSrcOffset(0).setDstOffset(0).setSize(indexBufferSize);
+    commandBuffer.copyBuffer(stagingIndexBuffer.getBuffer(),
+                             m_indexBuffer->getBuffer(), indexCopyRegion);
 
     m_device.endSingleTimeCommands(commandBuffer);
 }
@@ -60,13 +87,15 @@ GhostModel::GhostModel(VulkanDevice &device,
 GhostModel::~GhostModel() {}
 
 void GhostModel::bind(const vk::raii::CommandBuffer &commandBuffer) {
-    vk::Buffer buffers[] = {m_vertexBuffer->getBuffer()};
+    vk::Buffer vertexBuffers[] = {m_vertexBuffer->getBuffer()};
+    vk::Buffer indexBuffer = m_indexBuffer->getBuffer();
     vk::DeviceSize offsets[] = {0};
-    commandBuffer.bindVertexBuffers(0, buffers, offsets);
+    commandBuffer.bindVertexBuffers(0, vertexBuffers, offsets);
+    commandBuffer.bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
 }
 
 void GhostModel::draw(const vk::raii::CommandBuffer &commandBuffer) {
-    commandBuffer.draw(m_vertexCount, 1, 0, 0);
+    commandBuffer.drawIndexed(static_cast<uint32_t>(m_indexCount), 1, 0, 0, 0);
 }
 
 } // namespace Ghost

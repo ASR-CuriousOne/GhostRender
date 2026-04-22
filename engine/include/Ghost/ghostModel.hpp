@@ -15,7 +15,8 @@ struct Vertex {
 
 class GhostModel {
   public:
-    GhostModel(VulkanDevice &device, const std::vector<Vertex> &vertices);
+    GhostModel(VulkanDevice &device, const std::vector<Vertex> &vertices,
+               const std::vector<uint32_t> &indicies);
     ~GhostModel();
 
     GhostModel(const GhostModel &) = delete;
@@ -27,6 +28,8 @@ class GhostModel {
   private:
     const VulkanDevice &m_device;
     std::unique_ptr<GhostBuffer> m_vertexBuffer;
+    std::unique_ptr<GhostBuffer> m_indexBuffer;
     uint32_t m_vertexCount;
+    uint32_t m_indexCount;
 };
 } // namespace Ghost
