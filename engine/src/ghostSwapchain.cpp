@@ -50,7 +50,19 @@ GhostSwapchain::GhostSwapchain(const VulkanDevice &device,
     if (isConcurrent)
         createInfo.setQueueFamilyIndices(queueFamilyIndices);
 
-    m_swapchain = vk::raii::SwapchainKHR(device, createInfo);
+    const vk::raii::Device &raiiDevice = device;
+
+    VkSwapchainKHR rawSwapchain = nullptr;
+    VkResult result = vkCreateSwapchainKHR(
+        *raiiDevice,
+        reinterpret_cast<const VkSwapchainCreateInfoKHR *>(&createInfo),
+        nullptr, &rawSwapchain);
+
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        throw std::runtime_error("Failed to create swapchain!");
+    }
+
+    m_swapchain = vk::raii::SwapchainKHR(raiiDevice, rawSwapchain);
 
     m_swapchainImages = m_swapchain.getImages();
     m_swapchainImageFormat = surfaceFormat.format;
@@ -66,7 +78,7 @@ GhostSwapchain::GhostSwapchain(const VulkanDevice &device,
 
         m_swapchainImageViews.emplace_back(device, createInfo);
     }
-}   
+}
 
 GhostSwapchain::~GhostSwapchain() {}
 
@@ -119,7 +131,7 @@ GhostSwapchain::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities,
 
 vk::ResultValue<uint32_t> GhostSwapchain::aquireNextImage(
     const vk::raii::Semaphore &imageAvailableSemaphore) {
-    return m_swapchain.acquireNextImage(UINT32_MAX,imageAvailableSemaphore);
+    return m_swapchain.acquireNextImage(UINT32_MAX, imageAvailableSemaphore);
 }
 
 } // namespace Ghost
