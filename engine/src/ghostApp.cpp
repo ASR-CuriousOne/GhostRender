@@ -1,8 +1,11 @@
 #include <Ghost/ghostApp.hpp>
-#include <Ghost/ghostModel.hpp>
 #include <Ghost/utils.hpp>
 
 namespace Ghost {
+struct PushConstantData {
+    glm::mat4 transform{1.f};
+};
+
 std::atomic<bool> GhostApp::s_quitFlag{false};
 
 GhostApp::GhostApp()
@@ -18,19 +21,18 @@ GhostApp::GhostApp()
                            ? envVars["FRAG_SHADER_PATH"]
                            : "./shaders/frag.spv";
 
+    loadGameObjects();
+
+    vk::PushConstantRange pushConstantRange;
+    pushConstantRange.setStageFlags(vk::ShaderStageFlagBits::eVertex)
+        .setOffset(0)
+        .setSize(sizeof(PushConstantData));
+
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
     pipelineLayoutCreateInfo.setSetLayoutCount(0)
         .setSetLayouts(nullptr)
-        .setPushConstantRangeCount(0)
-        .setPushConstantRanges(nullptr);
-
-    const std::vector<Vertex> vertices = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                                          {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-                                          {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-                                          {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
-    const std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
-
-    m_model = std::make_unique<GhostModel>(m_device, vertices, indices);
+        .setPushConstantRangeCount(1)
+        .setPushConstantRanges(pushConstantRange);
 
     m_pipelineLayout =
         vk::raii::PipelineLayout(m_device, pipelineLayoutCreateInfo);
@@ -53,6 +55,30 @@ GhostApp::GhostApp()
     std::clog << m_device.getDeviceName() << std::endl;
 }
 
+void GhostApp::loadGameObjects() {
+    const std::vector<Vertex> vertices = {
+        {{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
+    const std::vector<uint32_t> indices = {0, 1, 2};
+
+    auto model = std::make_shared<GhostModel>(m_device, vertices, indices);
+
+    auto triangle1 = GhostGameObject::createGameObject();
+    triangle1.model = model;
+    triangle1.transform.translation = {-0.5f, 0.0f, 0.0f};
+    triangle1.transform.scale = {0.5f, 0.5f, 0.5f};
+
+    auto triangle2 = GhostGameObject::createGameObject();
+    triangle2.model = model;
+    triangle2.transform.translation = {0.5f, 0.0f, 0.0f};
+    triangle2.transform.scale = {0.5f, 0.5f, 0.5f};
+    triangle2.transform.rotation.z = 3.14159f;
+
+    m_gameObjects.push_back(std::move(triangle1));
+    m_gameObjects.push_back(std::move(triangle2));
+}
+
 GhostApp::~GhostApp() {}
 
 void GhostApp::run() {
@@ -66,8 +92,17 @@ void GhostApp::run() {
 
             commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
                                        **m_graphicsPipeline);
-            m_model->bind(commandBuffer);
-            m_model->draw(commandBuffer);
+            for (auto &obj : m_gameObjects) {
+                PushConstantData push{};
+                push.transform = obj.transform.mat4();
+
+                commandBuffer.pushConstants<PushConstantData>(
+                    *m_pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0,
+                    push);
+
+                obj.model->bind(commandBuffer);
+                obj.model->draw(commandBuffer);
+            }
 
             m_renderer.endSwapChainRenderPass(commandBuffer);
             m_renderer.endFrame();
