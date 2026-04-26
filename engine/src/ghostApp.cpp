@@ -3,7 +3,7 @@
 
 namespace Ghost {
 struct PushConstantData {
-    glm::mat4 transform{1.f};
+    glm::mat4 model{1.f};
 };
 
 std::atomic<bool> GhostApp::s_quitFlag{false};
@@ -21,6 +21,8 @@ GhostApp::GhostApp()
                            ? envVars["FRAG_SHADER_PATH"]
                            : "./shaders/frag.spv";
 
+    initDescriptors();
+
     loadGameObjects();
 
     vk::PushConstantRange pushConstantRange;
@@ -28,9 +30,10 @@ GhostApp::GhostApp()
         .setOffset(0)
         .setSize(sizeof(PushConstantData));
 
+    vk::DescriptorSetLayout rawLayout = *m_descriptorSetLayout;
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-    pipelineLayoutCreateInfo.setSetLayoutCount(0)
-        .setSetLayouts(nullptr)
+    pipelineLayoutCreateInfo.setSetLayoutCount(1)
+        .setSetLayouts(rawLayout)
         .setPushConstantRangeCount(1)
         .setPushConstantRanges(pushConstantRange);
 
@@ -55,6 +58,64 @@ GhostApp::GhostApp()
     std::clog << m_device.getDeviceName() << std::endl;
 }
 
+void GhostApp::initDescriptors() {
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        m_uniformBuffers.push_back(std::make_unique<GhostBuffer>(
+            m_device, sizeof(GlobalUbo),
+            vk::BufferUsageFlagBits::eUniformBuffer,
+            vk::MemoryPropertyFlagBits::eHostVisible |
+                vk::MemoryPropertyFlagBits::eHostCoherent));
+        m_uniformBuffers[i]->map();
+    }
+
+    vk::DescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding.setBinding(0)
+        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+        .setDescriptorCount(1)
+        .setStageFlags(vk::ShaderStageFlagBits::eVertex);
+
+    vk::DescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.setBindingCount(1).setPBindings(&uboLayoutBinding);
+    m_descriptorSetLayout = vk::raii::DescriptorSetLayout(m_device, layoutInfo);
+
+    vk::DescriptorPoolSize poolSize{};
+    poolSize.setType(vk::DescriptorType::eUniformBuffer)
+        .setDescriptorCount(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT));
+
+    vk::DescriptorPoolCreateInfo poolInfo{};
+    poolInfo.setPoolSizeCount(1)
+        .setPPoolSizes(&poolSize)
+        .setMaxSets(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT))
+        .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
+    m_descriptorPool = vk::raii::DescriptorPool(m_device, poolInfo);
+
+    std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT,
+                                                 *m_descriptorSetLayout);
+    vk::DescriptorSetAllocateInfo allocInfo{};
+    allocInfo.setDescriptorPool(*m_descriptorPool)
+        .setDescriptorSetCount(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT))
+        .setPSetLayouts(layouts.data());
+
+    m_descriptorSets = m_device->allocateDescriptorSets(allocInfo);
+
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vk::DescriptorBufferInfo bufferInfo{};
+        bufferInfo.setBuffer(m_uniformBuffers[i]->getBuffer())
+            .setOffset(0)
+            .setRange(sizeof(GlobalUbo));
+
+        vk::WriteDescriptorSet descriptorWrite{};
+        descriptorWrite.setDstSet(m_descriptorSets[i])
+            .setDstBinding(0)
+            .setDstArrayElement(0)
+            .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+            .setDescriptorCount(1)
+            .setPBufferInfo(&bufferInfo);
+
+        m_device->updateDescriptorSets({descriptorWrite}, nullptr);
+    }
+}
+
 void GhostApp::loadGameObjects() {
     const std::vector<Vertex> vertices = {
         {{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
@@ -72,11 +133,40 @@ void GhostApp::loadGameObjects() {
     auto triangle2 = GhostGameObject::createGameObject();
     triangle2.model = model;
     triangle2.transform.translation = {0.5f, 0.0f, 0.0f};
-    triangle2.transform.scale = {0.5f, 0.5f, 0.5f};
+    triangle2.transform.scale = {0.7f, 0.7f, 0.7f};
     triangle2.transform.rotation.z = 3.14159f;
 
     m_gameObjects.push_back(std::move(triangle1));
     m_gameObjects.push_back(std::move(triangle2));
+}
+
+void GhostApp::updateUniformBuffer(uint32_t currentImage) {
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(
+                     currentTime - startTime)
+                     .count();
+
+    GlobalUbo ubo{};
+
+    glm::vec3 cameraPos =
+        glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f),
+                    glm::vec3(0.0f, 0.0f, 1.0f)) *
+        glm::vec4(2.0f, 2.0f, 2.0f, 1.0f);
+
+    ubo.view = glm::lookAt(cameraPos, glm::vec3(0.0f, 0.0f, 0.0f),
+                           glm::vec3(0.0f, 0.0f, 1.0f));
+
+    ubo.projection =
+        glm::perspective(glm::radians(45.0f),
+                         (float)m_renderer.getSwapchainExtent().width /
+                             (float)m_renderer.getSwapchainExtent().height,
+                         0.1f, 10.0f);
+    ubo.projection[1][1] *= -1;
+
+    m_uniformBuffers[currentImage]->writeToBuffer(
+        std::span<const GlobalUbo>(&ubo, 1));
 }
 
 GhostApp::~GhostApp() {}
@@ -88,13 +178,22 @@ void GhostApp::run() {
 
         if (auto &commandBuffer = m_renderer.beginFrame();
             m_renderer.isFrameInProgress()) {
+            int frameIndex = m_renderer.getFrameIndex();
+
+            updateUniformBuffer(frameIndex);
+
             m_renderer.beginSwapChainRenderPass(commandBuffer);
 
             commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
                                        **m_graphicsPipeline);
+
+            commandBuffer.bindDescriptorSets(
+                vk::PipelineBindPoint::eGraphics, *m_pipelineLayout, 0,
+                {m_descriptorSets[frameIndex]}, nullptr);
+
             for (auto &obj : m_gameObjects) {
                 PushConstantData push{};
-                push.transform = obj.transform.mat4();
+                push.model = obj.transform.mat4();
 
                 commandBuffer.pushConstants<PushConstantData>(
                     *m_pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0,

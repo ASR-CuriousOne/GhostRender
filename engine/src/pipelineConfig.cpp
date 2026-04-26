@@ -31,7 +31,7 @@ PipelineConfigInfo::defaultConfig(PipelineConfigInfo &defaultConfig) {
         .setPolygonMode(vk::PolygonMode::eFill)
         .setLineWidth(1.0f)
         .setCullMode(vk::CullModeFlags::BitsType::eBack)
-        .setFrontFace(vk::FrontFace::eClockwise)
+        .setFrontFace(vk::FrontFace::eCounterClockwise)
         .setDepthBiasEnable(vk::False);
 
     defaultConfig.multisampleInfo.setSampleShadingEnable(vk::False)

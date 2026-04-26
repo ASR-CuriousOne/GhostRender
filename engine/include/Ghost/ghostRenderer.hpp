@@ -27,6 +27,8 @@ class GhostRenderer {
 
     bool isFrameInProgress() { return m_isFrameStarted; }
 
+	vk::Extent2D getSwapchainExtent() const {return m_swapchain->getSwapchainExtent();}
+
   private:
     void createCommandBuffers();
     void createSyncObjects();

@@ -10,6 +10,11 @@
 #include <filesystem>
 
 namespace Ghost {
+struct GlobalUbo {
+    glm::mat4 projection{1.f};
+    glm::mat4 view{1.f};
+};
+
 class GhostApp {
   public:
     static std::atomic<bool> s_quitFlag;
@@ -18,7 +23,7 @@ class GhostApp {
 
     void run();
 
-	void loadGameObjects();
+    void loadGameObjects();
 
   private:
     WindowGLFW m_window;
@@ -27,6 +32,12 @@ class GhostApp {
     VulkanDevice m_device;
     GhostRenderer m_renderer;
 
+    vk::raii::DescriptorSetLayout m_descriptorSetLayout = nullptr;
+    vk::raii::DescriptorPool m_descriptorPool = nullptr;
+    std::vector<vk::raii::DescriptorSet> m_descriptorSets;
+
+    std::vector<std::unique_ptr<GhostBuffer>> m_uniformBuffers;
+
     vk::raii::PipelineLayout m_pipelineLayout = nullptr;
     std::unique_ptr<GhostGraphicsPipeline> m_graphicsPipeline;
 
@@ -34,5 +45,9 @@ class GhostApp {
     std::filesystem::path m_fragShaderPath;
 
     std::vector<GhostGameObject> m_gameObjects;
+
+    void initDescriptors();
+
+    void updateUniformBuffer(uint32_t currentImage);
 };
 } // namespace Ghost
