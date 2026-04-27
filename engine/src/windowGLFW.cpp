@@ -8,6 +8,9 @@ WindowGLFW::WindowGLFW() {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     m_window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+
+    glfwSetWindowUserPointer(m_window, this);
+    glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
 }
 
 WindowGLFW::~WindowGLFW() {
