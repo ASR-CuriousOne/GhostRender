@@ -60,7 +60,7 @@ void GhostCamera::update(float dt) {
     glm::vec3 cameraPos =
         glm::rotate(glm::mat4(1.0f), m_accumulatedTime * glm::radians(90.0f),
                     glm::vec3(0.0f, 0.0f, 1.0f)) *
-        glm::vec4(2.0f, 2.0f, 1.5f, 1.0f);
+        glm::vec4(1.0f, 1.0f, 0.75f, 1.0f);
 
     setViewTarget(cameraPos, glm::vec3(0.0f, 0.0f, 0.0f),
                   glm::vec3(0.0f, 0.0f, 1.0f));
