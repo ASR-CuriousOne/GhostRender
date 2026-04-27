@@ -50,4 +50,62 @@ GhostDescriptorSetLayout::GhostDescriptorSetLayout(
 
 GhostDescriptorSetLayout::~GhostDescriptorSetLayout() {}
 
+GhostDescriptorPool::Builder &
+GhostDescriptorPool::Builder::addPoolSize(vk::DescriptorType descriptorType,
+                                          uint32_t count) {
+    m_poolSizes.push_back({descriptorType, count});
+    return *this;
+}
+
+GhostDescriptorPool::Builder &GhostDescriptorPool::Builder::setPoolFlags(
+    vk::DescriptorPoolCreateFlags flags) {
+    m_poolFlags = flags;
+    return *this;
+}
+
+GhostDescriptorPool::Builder &
+GhostDescriptorPool::Builder::setMaxSets(uint32_t count) {
+    m_maxSets = count;
+    return *this;
+}
+
+std::unique_ptr<GhostDescriptorPool>
+GhostDescriptorPool::Builder::build() const {
+    return std::make_unique<GhostDescriptorPool>(m_device, m_maxSets,
+                                                 m_poolFlags, m_poolSizes);
+}
+
+GhostDescriptorPool::GhostDescriptorPool(
+    VulkanDevice &device, uint32_t maxSets,
+    vk::DescriptorPoolCreateFlags poolFlags,
+    const std::vector<vk::DescriptorPoolSize> &poolSizes)
+    : m_device{device} {
+
+    vk::DescriptorPoolCreateInfo descriptorPoolInfo{};
+    descriptorPoolInfo.setPoolSizeCount(static_cast<uint32_t>(poolSizes.size()))
+        .setPPoolSizes(poolSizes.data())
+        .setMaxSets(maxSets)
+        .setFlags(poolFlags);
+
+    m_descriptorPool = vk::raii::DescriptorPool(m_device, descriptorPoolInfo);
+}
+
+GhostDescriptorPool::~GhostDescriptorPool() {}
+
+std::vector<vk::raii::DescriptorSet>
+GhostDescriptorPool::allocateDescriptorSets(
+    uint32_t descriptorSetCount,
+    const vk::DescriptorSetLayout &descriptorSetLayout) {
+
+    std::vector<vk::DescriptorSetLayout> layouts(descriptorSetCount,
+                                                 descriptorSetLayout);
+
+    vk::DescriptorSetAllocateInfo allocInfo{};
+    allocInfo.setDescriptorPool(*m_descriptorPool)
+        .setDescriptorSetCount(descriptorSetCount)
+        .setPSetLayouts(layouts.data());
+
+    return m_device->allocateDescriptorSets(allocInfo);
+}
+
 } // namespace Ghost

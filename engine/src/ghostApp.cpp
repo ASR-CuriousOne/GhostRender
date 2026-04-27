@@ -34,25 +34,16 @@ void GhostApp::initDescriptors() {
                                         vk::ShaderStageFlagBits::eVertex)
                             .build();
 
-    vk::DescriptorPoolSize poolSize{};
-    poolSize.setType(vk::DescriptorType::eUniformBuffer)
-        .setDescriptorCount(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT));
+    m_globalPool =
+        GhostDescriptorPool::Builder(m_device)
+            .setMaxSets(MAX_FRAMES_IN_FLIGHT)
+            .addPoolSize(vk::DescriptorType::eUniformBuffer,
+                         MAX_FRAMES_IN_FLIGHT)
+            .setPoolFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
+            .build();
 
-    vk::DescriptorPoolCreateInfo poolInfo{};
-    poolInfo.setPoolSizeCount(1)
-        .setPPoolSizes(&poolSize)
-        .setMaxSets(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT))
-        .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
-    m_descriptorPool = vk::raii::DescriptorPool(m_device, poolInfo);
-
-    std::vector<vk::DescriptorSetLayout> layouts(
+    m_descriptorSets = m_globalPool->allocateDescriptorSets(
         MAX_FRAMES_IN_FLIGHT, m_globalSetLayout->getDescriptorSetLayout());
-    vk::DescriptorSetAllocateInfo allocInfo{};
-    allocInfo.setDescriptorPool(*m_descriptorPool)
-        .setDescriptorSetCount(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT))
-        .setPSetLayouts(layouts.data());
-
-    m_descriptorSets = m_device->allocateDescriptorSets(allocInfo);
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vk::DescriptorBufferInfo bufferInfo{};

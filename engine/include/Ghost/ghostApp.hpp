@@ -9,7 +9,6 @@
 #include <Ghost/vulkanInstance.hpp>
 #include <Ghost/windowGLFW.hpp>
 #include <atomic>
-#include <filesystem>
 
 namespace Ghost {
 struct Ubo {
@@ -35,7 +34,7 @@ class GhostApp {
     GhostRenderer m_renderer;
 
     std::unique_ptr<GhostDescriptorSetLayout> m_globalSetLayout;
-    vk::raii::DescriptorPool m_descriptorPool = nullptr;
+	std::unique_ptr<GhostDescriptorPool> m_globalPool;
     std::vector<vk::raii::DescriptorSet> m_descriptorSets;
 
     std::vector<std::unique_ptr<GhostBuffer>> m_uniformBuffers;
