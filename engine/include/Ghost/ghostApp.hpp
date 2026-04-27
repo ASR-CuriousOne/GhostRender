@@ -1,5 +1,6 @@
 #pragma once
 #include <Ghost/ghostCamera.hpp>
+#include <Ghost/ghostDescriptors.hpp>
 #include <Ghost/ghostGameObject.hpp>
 #include <Ghost/ghostRenderer.hpp>
 #include <Ghost/ghostSurface.hpp>
@@ -33,7 +34,7 @@ class GhostApp {
     VulkanDevice m_device;
     GhostRenderer m_renderer;
 
-    vk::raii::DescriptorSetLayout m_descriptorSetLayout = nullptr;
+    std::unique_ptr<GhostDescriptorSetLayout> m_globalSetLayout;
     vk::raii::DescriptorPool m_descriptorPool = nullptr;
     std::vector<vk::raii::DescriptorSet> m_descriptorSets;
 

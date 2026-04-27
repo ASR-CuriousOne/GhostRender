@@ -29,15 +29,10 @@ void GhostApp::initDescriptors() {
         m_uniformBuffers[i]->map();
     }
 
-    vk::DescriptorSetLayoutBinding uboLayoutBinding{};
-    uboLayoutBinding.setBinding(0)
-        .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-        .setDescriptorCount(1)
-        .setStageFlags(vk::ShaderStageFlagBits::eVertex);
-
-    vk::DescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.setBindingCount(1).setPBindings(&uboLayoutBinding);
-    m_descriptorSetLayout = vk::raii::DescriptorSetLayout(m_device, layoutInfo);
+    m_globalSetLayout = GhostDescriptorSetLayout::Builder(m_device)
+                            .addBinding(0, vk::DescriptorType::eUniformBuffer,
+                                        vk::ShaderStageFlagBits::eVertex)
+                            .build();
 
     vk::DescriptorPoolSize poolSize{};
     poolSize.setType(vk::DescriptorType::eUniformBuffer)
@@ -50,8 +45,8 @@ void GhostApp::initDescriptors() {
         .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
     m_descriptorPool = vk::raii::DescriptorPool(m_device, poolInfo);
 
-    std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT,
-                                                 *m_descriptorSetLayout);
+    std::vector<vk::DescriptorSetLayout> layouts(
+        MAX_FRAMES_IN_FLIGHT, m_globalSetLayout->getDescriptorSetLayout());
     vk::DescriptorSetAllocateInfo allocInfo{};
     allocInfo.setDescriptorPool(*m_descriptorPool)
         .setDescriptorSetCount(static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT))
@@ -122,7 +117,8 @@ void GhostApp::run() {
     auto currentTime = std::chrono::high_resolution_clock::now();
 
     SimpleRenderSystem simpleRenderSystem{
-        m_device, m_renderer.getSwapChainRenderPass(), *m_descriptorSetLayout};
+        m_device, m_renderer.getSwapChainRenderPass(),
+        m_globalSetLayout->getDescriptorSetLayout()};
 
     while (!glfwWindowShouldClose(m_window) && !s_quitFlag.load()) {
         glfwPollEvents();
