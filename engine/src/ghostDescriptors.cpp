@@ -108,4 +108,55 @@ GhostDescriptorPool::allocateDescriptorSets(
     return m_device->allocateDescriptorSets(allocInfo);
 }
 
+GhostDescriptorWriter::GhostDescriptorWriter(
+    GhostDescriptorSetLayout &setLayout)
+    : m_setLayout{setLayout} {}
+
+GhostDescriptorWriter &
+GhostDescriptorWriter::writeBuffer(uint32_t binding,
+                                   const vk::DescriptorBufferInfo *bufferInfo) {
+
+    const auto &bindings = m_setLayout.getBindings();
+    if (bindings.count(binding) == 0) {
+        throw std::runtime_error("Layout does not contain specified binding");
+    }
+
+    vk::WriteDescriptorSet write{};
+    write.setDescriptorType(bindings.at(binding).descriptorType)
+        .setDstBinding(binding)
+        .setDescriptorCount(1)
+        .setPBufferInfo(bufferInfo);
+
+    m_writes.push_back(write);
+    return *this;
+}
+
+GhostDescriptorWriter &
+GhostDescriptorWriter::writeImage(uint32_t binding,
+                                  const vk::DescriptorImageInfo *imageInfo) {
+
+    const auto &bindings = m_setLayout.getBindings();
+    if (bindings.count(binding) == 0) {
+        throw std::runtime_error("Layout does not contain specified binding");
+    }
+
+    vk::WriteDescriptorSet write{};
+    write.setDescriptorType(bindings.at(binding).descriptorType)
+        .setDstBinding(binding)
+        .setDescriptorCount(1)
+        .setPImageInfo(imageInfo);
+
+    m_writes.push_back(write);
+    return *this;
+}
+
+void GhostDescriptorWriter::build(const vk::raii::DescriptorSet &set,
+                                  const VulkanDevice &device) {
+    for (auto &write : m_writes) {
+        write.setDstSet(*set);
+    }
+
+    device->updateDescriptorSets(m_writes, nullptr);
+}
+
 } // namespace Ghost

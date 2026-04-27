@@ -36,6 +36,10 @@ class GhostDescriptorSetLayout {
         return *m_descriptorSetLayout;
     }
     operator vk::DescriptorSetLayout() const { return *m_descriptorSetLayout; }
+    const std::unordered_map<uint32_t, vk::DescriptorSetLayoutBinding> &
+    getBindings() const {
+        return m_bindings;
+    }
 
   private:
     VulkanDevice &m_device;
@@ -80,6 +84,22 @@ class GhostDescriptorPool {
   private:
     VulkanDevice &m_device;
     vk::raii::DescriptorPool m_descriptorPool = nullptr;
+};
+
+class GhostDescriptorWriter {
+  public:
+    GhostDescriptorWriter(GhostDescriptorSetLayout &setLayout);
+
+    GhostDescriptorWriter &
+    writeBuffer(uint32_t binding, const vk::DescriptorBufferInfo *bufferInfo);
+    GhostDescriptorWriter &writeImage(uint32_t binding,
+                                      const vk::DescriptorImageInfo *imageInfo);
+
+    void build(const vk::raii::DescriptorSet &set, const VulkanDevice &device);
+
+  private:
+    GhostDescriptorSetLayout &m_setLayout;
+    std::vector<vk::WriteDescriptorSet> m_writes;
 };
 
 } // namespace Ghost

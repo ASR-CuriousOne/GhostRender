@@ -46,20 +46,11 @@ void GhostApp::initDescriptors() {
         MAX_FRAMES_IN_FLIGHT, m_globalSetLayout->getDescriptorSetLayout());
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vk::DescriptorBufferInfo bufferInfo{};
-        bufferInfo.setBuffer(m_uniformBuffers[i]->getBuffer())
-            .setOffset(0)
-            .setRange(sizeof(Ubo));
+        auto bufferInfo = m_uniformBuffers[i]->descriptorInfo();
 
-        vk::WriteDescriptorSet descriptorWrite{};
-        descriptorWrite.setDstSet(m_descriptorSets[i])
-            .setDstBinding(0)
-            .setDstArrayElement(0)
-            .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-            .setDescriptorCount(1)
-            .setPBufferInfo(&bufferInfo);
-
-        m_device->updateDescriptorSets({descriptorWrite}, nullptr);
+        GhostDescriptorWriter(*m_globalSetLayout)
+            .writeBuffer(0, &bufferInfo)
+            .build(m_descriptorSets[i], m_device);
     }
 }
 

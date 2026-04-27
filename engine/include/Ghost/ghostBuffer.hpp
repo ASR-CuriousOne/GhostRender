@@ -33,6 +33,10 @@ class GhostBuffer {
 
     vk::Buffer getBuffer() const { return *m_buffer; }
     vk::DeviceSize getBufferSize() const { return m_bufferSize; }
+    vk::DescriptorBufferInfo descriptorInfo(vk::DeviceSize size = vk::WholeSize,
+                                            vk::DeviceSize offset = 0) const {
+        return vk::DescriptorBufferInfo(*m_buffer, offset, size);
+    }
 
   private:
     const VulkanDevice &m_device;
