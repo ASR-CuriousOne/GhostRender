@@ -1,4 +1,5 @@
 #pragma once
+#include <Ghost/ghostCamera.hpp>
 #include <Ghost/ghostGameObject.hpp>
 #include <Ghost/ghostGraphicsPipeline.hpp>
 #include <Ghost/ghostRenderer.hpp>
@@ -10,7 +11,7 @@
 #include <filesystem>
 
 namespace Ghost {
-struct GlobalUbo {
+struct Ubo {
     glm::mat4 projection{1.f};
     glm::mat4 view{1.f};
 };
@@ -48,6 +49,6 @@ class GhostApp {
 
     void initDescriptors();
 
-    void updateUniformBuffer(uint32_t currentImage);
+    void updateUniformBuffer(uint32_t currentImage,const GhostCamera &camera);
 };
 } // namespace Ghost
