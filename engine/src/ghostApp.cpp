@@ -12,48 +12,10 @@ GhostApp::GhostApp()
     : m_window(), m_instance(), m_surface(m_instance, m_window),
       m_device(m_instance, m_surface),
       m_renderer(m_window, m_device, m_surface) {
-    auto envVars = Utils::loadEnvFile(".env");
-
-    m_vertShaderPath = envVars.contains("VERT_SHADER_PATH")
-                           ? envVars["VERT_SHADER_PATH"]
-                           : "./shaders/vert.spv";
-    m_fragShaderPath = envVars.contains("FRAG_SHADER_PATH")
-                           ? envVars["FRAG_SHADER_PATH"]
-                           : "./shaders/frag.spv";
 
     initDescriptors();
 
     loadGameObjects();
-
-    vk::PushConstantRange pushConstantRange;
-    pushConstantRange.setStageFlags(vk::ShaderStageFlagBits::eVertex)
-        .setOffset(0)
-        .setSize(sizeof(PushConstantData));
-
-    vk::DescriptorSetLayout rawLayout = *m_descriptorSetLayout;
-    vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-    pipelineLayoutCreateInfo.setSetLayoutCount(1)
-        .setSetLayouts(rawLayout)
-        .setPushConstantRangeCount(1)
-        .setPushConstantRanges(pushConstantRange);
-
-    m_pipelineLayout =
-        vk::raii::PipelineLayout(m_device, pipelineLayoutCreateInfo);
-    PipelineConfigInfo pipelineConfigInfo;
-    PipelineConfigInfo::defaultConfig(pipelineConfigInfo);
-    pipelineConfigInfo.renderPass = m_renderer.getSwapChainRenderPass();
-    pipelineConfigInfo.pipelineLayout = m_pipelineLayout;
-
-    pipelineConfigInfo.bindingDescriptions = Vertex::getBindingDescriptions();
-    pipelineConfigInfo.attributeDescriptions =
-        Vertex::getAttributeDescriptions();
-    pipelineConfigInfo.vertexInputInfo
-        .setVertexBindingDescriptions(pipelineConfigInfo.bindingDescriptions)
-        .setVertexAttributeDescriptions(
-            pipelineConfigInfo.attributeDescriptions);
-
-    m_graphicsPipeline = std::make_unique<GhostGraphicsPipeline>(
-        m_device, m_vertShaderPath, m_fragShaderPath, pipelineConfigInfo);
 
     std::clog << m_device.getDeviceName() << std::endl;
 }
@@ -159,6 +121,9 @@ void GhostApp::run() {
 
     auto currentTime = std::chrono::high_resolution_clock::now();
 
+    SimpleRenderSystem simpleRenderSystem{
+        m_device, m_renderer.getSwapChainRenderPass(), *m_descriptorSetLayout};
+
     while (!glfwWindowShouldClose(m_window) && !s_quitFlag.load()) {
         glfwPollEvents();
 
@@ -183,24 +148,8 @@ void GhostApp::run() {
 
             m_renderer.beginSwapChainRenderPass(commandBuffer);
 
-            commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
-                                       **m_graphicsPipeline);
-
-            commandBuffer.bindDescriptorSets(
-                vk::PipelineBindPoint::eGraphics, *m_pipelineLayout, 0,
-                {m_descriptorSets[frameIndex]}, nullptr);
-
-            for (auto &obj : m_gameObjects) {
-                PushConstantData push{};
-                push.model = obj.transform.mat4();
-
-                commandBuffer.pushConstants<PushConstantData>(
-                    *m_pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0,
-                    push);
-
-                obj.model->bind(commandBuffer);
-                obj.model->draw(commandBuffer);
-            }
+            simpleRenderSystem.renderGameObjects(commandBuffer, m_gameObjects,
+                                                 m_descriptorSets[frameIndex]);
 
             m_renderer.endSwapChainRenderPass(commandBuffer);
             m_renderer.endFrame();

@@ -1,9 +1,9 @@
 #pragma once
 #include <Ghost/ghostCamera.hpp>
 #include <Ghost/ghostGameObject.hpp>
-#include <Ghost/ghostGraphicsPipeline.hpp>
 #include <Ghost/ghostRenderer.hpp>
 #include <Ghost/ghostSurface.hpp>
+#include <Ghost/simpleRenderSystem.hpp>
 #include <Ghost/vulkanDevice.hpp>
 #include <Ghost/vulkanInstance.hpp>
 #include <Ghost/windowGLFW.hpp>
@@ -39,16 +39,10 @@ class GhostApp {
 
     std::vector<std::unique_ptr<GhostBuffer>> m_uniformBuffers;
 
-    vk::raii::PipelineLayout m_pipelineLayout = nullptr;
-    std::unique_ptr<GhostGraphicsPipeline> m_graphicsPipeline;
-
-    std::filesystem::path m_vertShaderPath;
-    std::filesystem::path m_fragShaderPath;
-
     std::vector<GhostGameObject> m_gameObjects;
 
     void initDescriptors();
 
-    void updateUniformBuffer(uint32_t currentImage,const GhostCamera &camera);
+    void updateUniformBuffer(uint32_t currentImage, const GhostCamera &camera);
 };
 } // namespace Ghost
