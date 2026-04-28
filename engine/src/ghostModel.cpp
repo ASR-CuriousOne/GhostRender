@@ -1,7 +1,26 @@
-#include "vulkan/vulkan.hpp"
-#include <Ghost/ghostBuffer.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <vendor/tiny_obj_loader.h>
+
 #include <Ghost/ghostModel.hpp>
-#include <memory>
+
+#include <iostream>
+#include <unordered_map>
+
+namespace std {
+template <> struct hash<Ghost::Vertex> {
+    size_t operator()(Ghost::Vertex const &vertex) const {
+        size_t seed = 0;
+        seed ^= hash<glm::vec3>()(vertex.position) + 0x9e3779b9 + (seed << 6) +
+                (seed >> 2);
+        seed ^= hash<glm::vec3>()(vertex.color) + 0x9e3779b9 + (seed << 6) +
+                (seed >> 2);
+        return seed;
+    }
+};
+} // namespace std
 
 namespace Ghost {
 std::vector<vk::VertexInputBindingDescription>
@@ -85,6 +104,61 @@ GhostModel::GhostModel(VulkanDevice &device,
 }
 
 GhostModel::~GhostModel() {}
+
+void GhostModel::Builder::loadModel(const std::string &filepath) {
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string warn, err;
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
+                          filepath.c_str())) {
+        throw std::runtime_error(warn + err);
+    }
+
+    vertices.clear();
+    indices.clear();
+
+    std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+    for (const auto &shape : shapes) {
+        for (const auto &index : shape.mesh.indices) {
+            Vertex vertex{};
+
+            vertex.position = {attrib.vertices[3 * index.vertex_index + 0],
+                               attrib.vertices[3 * index.vertex_index + 1],
+                               attrib.vertices[3 * index.vertex_index + 2]};
+
+            if (!attrib.colors.empty()) {
+                vertex.color = {attrib.colors[3 * index.vertex_index + 0],
+                                attrib.colors[3 * index.vertex_index + 1],
+                                attrib.colors[3 * index.vertex_index + 2]};
+            } else {
+                vertex.color = {1.0f, 1.0f, 1.0f};
+            }
+
+            if (uniqueVertices.count(vertex) == 0) {
+                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                vertices.push_back(vertex);
+            }
+            indices.push_back(uniqueVertices[vertex]);
+        }
+    }
+}
+
+std::shared_ptr<GhostModel>
+GhostModel::createModelFromFile(VulkanDevice &device,
+                                const std::string &filepath) {
+    Builder builder{};
+    builder.loadModel(filepath);
+
+    std::clog << "Loaded Model: " << filepath
+              << " | Vertices: " << builder.vertices.size()
+              << " | Indices: " << builder.indices.size() << std::endl;
+
+    return std::make_shared<GhostModel>(device, builder.vertices,
+                                        builder.indices);
+}
 
 void GhostModel::bind(const vk::raii::CommandBuffer &commandBuffer) {
     vk::Buffer vertexBuffers[] = {m_vertexBuffer->getBuffer()};

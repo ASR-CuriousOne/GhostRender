@@ -11,16 +11,30 @@ struct Vertex {
     getBindingDescriptions();
     static std::vector<vk::VertexInputAttributeDescription>
     getAttributeDescriptions();
+
+    bool operator==(const Vertex &other) const {
+        return position == other.position && color == other.color;
+    }
 };
 
 class GhostModel {
   public:
+    struct Builder {
+        std::vector<Vertex> vertices{};
+        std::vector<uint32_t> indices{};
+
+        void loadModel(const std::string &filepath);
+    };
+
     GhostModel(VulkanDevice &device, const std::vector<Vertex> &vertices,
                const std::vector<uint32_t> &indicies);
     ~GhostModel();
 
     GhostModel(const GhostModel &) = delete;
     GhostModel &operator=(const GhostModel &) = delete;
+
+    static std::shared_ptr<GhostModel>
+    createModelFromFile(VulkanDevice &device, const std::string &filepath);
 
     void bind(const vk::raii::CommandBuffer &commandBuffer);
     void draw(const vk::raii::CommandBuffer &commandBuffer);

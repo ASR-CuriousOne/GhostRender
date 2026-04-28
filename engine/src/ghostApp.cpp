@@ -55,27 +55,17 @@ void GhostApp::initDescriptors() {
 }
 
 void GhostApp::loadGameObjects() {
-    const std::vector<Vertex> vertices = {
-        {{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
-    const std::vector<uint32_t> indices = {0, 1, 2};
+    auto env = Utils::loadEnvFile(".env");
 
-    auto model = std::make_shared<GhostModel>(m_device, vertices, indices);
+    auto model = GhostModel::createModelFromFile(m_device, env["MODEL_PATH"]);
 
-    auto triangle1 = GhostGameObject::createGameObject();
-    triangle1.model = model;
-    triangle1.transform.translation = {-0.5f, 0.0f, 0.0f};
-    triangle1.transform.scale = {0.5f, 0.5f, 0.5f};
+    auto gameObject = GhostGameObject::createGameObject();
+    gameObject.model = model;
 
-    auto triangle2 = GhostGameObject::createGameObject();
-    triangle2.model = model;
-    triangle2.transform.translation = {0.5f, 0.0f, 0.0f};
-    triangle2.transform.scale = {0.7f, 0.7f, 0.7f};
-    triangle2.transform.rotation.z = 3.14159f;
+    gameObject.transform.translation = {0.0f, 0.0f, 0.0f};
+    gameObject.transform.scale = {1.0f, 1.0f, 1.0f};
 
-    m_gameObjects.push_back(std::move(triangle1));
-    m_gameObjects.push_back(std::move(triangle2));
+    m_gameObjects.push_back(std::move(gameObject));
 }
 
 void GhostApp::updateUniformBuffer(uint32_t currentImage,
