@@ -1,6 +1,5 @@
-#include "Ghost/swapChainDetails.hpp"
+#include <Ghost/swapChainDetails.hpp>
 #include <Ghost/vulkanDevice.hpp>
-#include <iostream>
 #include <set>
 #include <stdexcept>
 
@@ -34,6 +33,7 @@ VulkanDevice::VulkanDevice(const vk::raii::Instance &instance,
     }
 
     vk::PhysicalDeviceFeatures deviceFeatures;
+    deviceFeatures.setSamplerAnisotropy(vk::True);
 
     vk::DeviceCreateInfo createInfo(
         {}, queueCreateInfos.size(), queueCreateInfos.data(), 0, nullptr,
@@ -78,7 +78,7 @@ bool VulkanDevice::isDeviceSuitable(
 
     return properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu &&
            queueFamilyIndicies.isComplete() && extensionSupported &&
-           swapChainAdequate;
+           swapChainAdequate && features.samplerAnisotropy;
 }
 
 bool VulkanDevice::checkExtensions(

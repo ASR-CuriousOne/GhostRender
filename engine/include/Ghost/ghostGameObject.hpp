@@ -1,4 +1,5 @@
 #pragma once
+#include <Ghost/ghostTexture.hpp>
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 #include <Ghost/ghostModel.hpp>
@@ -38,6 +39,8 @@ class GhostGameObject {
     id_t getId() const { return m_id; }
 
     std::shared_ptr<GhostModel> model{};
+    std::shared_ptr<GhostTexture> texture{};
+    vk::raii::DescriptorSet textureDescriptorSet = nullptr;
     TransformComponent transform{};
 
   private:

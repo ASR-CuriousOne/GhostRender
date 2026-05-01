@@ -1,5 +1,4 @@
 #pragma once
-#include "vulkan/vulkan.hpp"
 #include <Ghost/queueFamilyIndicies.hpp>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
@@ -39,6 +38,10 @@ class VulkanDevice {
         return m_physicalDevice;
     }
 
+    vk::PhysicalDeviceProperties getPhysicalDeviceProperties() {
+        return m_physicalDevice.getProperties();
+    };
+
     const QueueFamilyIndicies &getQueueFamilyIndices() const {
         return m_queueFamilyIndicies;
     }
@@ -53,7 +56,8 @@ class VulkanDevice {
     std::string getDeviceName();
 
     vk::raii::CommandBuffer beginSingleTimeCommands() const;
-    void endSingleTimeCommands(const vk::raii::CommandBuffer &commandBuffer) const;
+    void
+    endSingleTimeCommands(const vk::raii::CommandBuffer &commandBuffer) const;
 };
 
 } // namespace Ghost

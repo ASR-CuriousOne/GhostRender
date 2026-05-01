@@ -8,26 +8,32 @@ struct PushConstantData {
 
 SimpleRenderSystem::SimpleRenderSystem(VulkanDevice &device,
                                        vk::RenderPass renderPass,
-                                       vk::DescriptorSetLayout globalSetLayout)
+                                       vk::DescriptorSetLayout globalSetLayout,
+                                       vk::DescriptorSetLayout textureSetLayout)
     : m_device(device) {
-    createPipelineLayout(globalSetLayout);
+    createPipelineLayout(globalSetLayout, textureSetLayout);
     createPipeline(renderPass);
 }
 
 SimpleRenderSystem::~SimpleRenderSystem() {}
 
 void SimpleRenderSystem::createPipelineLayout(
-    vk::DescriptorSetLayout globalSetLayout) {
+    vk::DescriptorSetLayout globalSetLayout,
+    vk::DescriptorSetLayout textureSetLayout) {
     vk::PushConstantRange pushConstantRange;
     pushConstantRange.setStageFlags(vk::ShaderStageFlagBits::eVertex)
         .setOffset(0)
         .setSize(sizeof(PushConstantData));
 
+    std::vector<vk::DescriptorSetLayout> setLayouts = {globalSetLayout,
+                                                       textureSetLayout};
+
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-    pipelineLayoutCreateInfo.setSetLayoutCount(1)
-        .setSetLayouts(globalSetLayout)
+    pipelineLayoutCreateInfo
+        .setSetLayoutCount(static_cast<uint32_t>(setLayouts.size()))
+        .setPSetLayouts(setLayouts.data())
         .setPushConstantRangeCount(1)
-        .setPushConstantRanges(pushConstantRange);
+        .setPPushConstantRanges(&pushConstantRange);
 
     m_pipelineLayout =
         vk::raii::PipelineLayout(m_device, pipelineLayoutCreateInfo);
@@ -77,6 +83,12 @@ void SimpleRenderSystem::renderGameObjects(
 
         commandBuffer.pushConstants<PushConstantData>(
             *m_pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, push);
+
+        if (*obj.textureDescriptorSet) {
+            commandBuffer.bindDescriptorSets(
+                vk::PipelineBindPoint::eGraphics, *m_pipelineLayout, 1,
+                {*obj.textureDescriptorSet}, nullptr);
+        }
 
         obj.model->bind(commandBuffer);
         obj.model->draw(commandBuffer);

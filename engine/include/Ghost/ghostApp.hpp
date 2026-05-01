@@ -34,7 +34,8 @@ class GhostApp {
     GhostRenderer m_renderer;
 
     std::unique_ptr<GhostDescriptorSetLayout> m_globalSetLayout;
-	std::unique_ptr<GhostDescriptorPool> m_globalPool;
+    std::unique_ptr<GhostDescriptorSetLayout> m_textureSetLayout;
+    std::unique_ptr<GhostDescriptorPool> m_globalPool;
     std::vector<vk::raii::DescriptorSet> m_descriptorSets;
 
     std::vector<std::unique_ptr<GhostBuffer>> m_uniformBuffers;

@@ -1,5 +1,8 @@
+#include "Ghost/ghostRenderer.hpp"
+#include "vulkan/vulkan.hpp"
 #include <Ghost/ghostApp.hpp>
 #include <Ghost/utils.hpp>
+#include <memory>
 
 namespace Ghost {
 struct PushConstantData {
@@ -34,11 +37,18 @@ void GhostApp::initDescriptors() {
                                         vk::ShaderStageFlagBits::eVertex)
                             .build();
 
+    m_textureSetLayout =
+        GhostDescriptorSetLayout::Builder(m_device)
+            .addBinding(0, vk::DescriptorType::eCombinedImageSampler,
+                        vk::ShaderStageFlagBits::eFragment)
+            .build();
+
     m_globalPool =
         GhostDescriptorPool::Builder(m_device)
-            .setMaxSets(MAX_FRAMES_IN_FLIGHT)
+            .setMaxSets(MAX_FRAMES_IN_FLIGHT + 50)
             .addPoolSize(vk::DescriptorType::eUniformBuffer,
                          MAX_FRAMES_IN_FLIGHT)
+            .addPoolSize(vk::DescriptorType::eCombinedImageSampler, 50)
             .setPoolFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
             .build();
 
@@ -59,11 +69,25 @@ void GhostApp::loadGameObjects() {
 
     auto model = GhostModel::createModelFromFile(m_device, env["MODEL_PATH"]);
 
+    std::string texPath = env.contains("TEXTURE_PATH")
+                              ? env["TEXTURE_PATH"]
+                              : "assets/textures/texture.jpg";
+    auto texture = std::make_shared<GhostTexture>(m_device, texPath);
+
     auto gameObject = GhostGameObject::createGameObject();
     gameObject.model = model;
-
+    gameObject.texture = texture;
     gameObject.transform.translation = {0.0f, 0.0f, 0.0f};
     gameObject.transform.scale = {1.0f, 1.0f, 1.0f};
+
+    auto texSets = m_globalPool->allocateDescriptorSets(
+        1, m_textureSetLayout->getDescriptorSetLayout());
+    gameObject.textureDescriptorSet = std::move(texSets[0]);
+
+    auto imageInfo = texture->descriptorInfo();
+    GhostDescriptorWriter(*m_textureSetLayout)
+        .writeImage(0, &imageInfo)
+        .build(gameObject.textureDescriptorSet, m_device);
 
     m_gameObjects.push_back(std::move(gameObject));
 }
@@ -90,7 +114,8 @@ void GhostApp::run() {
 
     SimpleRenderSystem simpleRenderSystem{
         m_device, m_renderer.getSwapChainRenderPass(),
-        m_globalSetLayout->getDescriptorSetLayout()};
+        m_globalSetLayout->getDescriptorSetLayout(),
+        m_textureSetLayout->getDescriptorSetLayout()};
 
     while (!glfwWindowShouldClose(m_window) && !s_quitFlag.load()) {
         glfwPollEvents();

@@ -7,7 +7,8 @@ namespace Ghost {
 class SimpleRenderSystem {
   public:
     SimpleRenderSystem(VulkanDevice &device, vk::RenderPass renderPass,
-                       vk::DescriptorSetLayout globalSetLayout);
+                       vk::DescriptorSetLayout globalSetLayout,
+					   vk::DescriptorSetLayout textureSetLayout);
     ~SimpleRenderSystem();
 
     void renderGameObjects(const vk::raii::CommandBuffer &commandBuffer,
@@ -15,7 +16,7 @@ class SimpleRenderSystem {
                            const vk::raii::DescriptorSet &globalDescriptorSet);
 
   private:
-    void createPipelineLayout(vk::DescriptorSetLayout globalSetLayout);
+    void createPipelineLayout(vk::DescriptorSetLayout globalSetLayout,vk::DescriptorSetLayout textureSetLayout);
     void createPipeline(vk::RenderPass renderPass);
 
     VulkanDevice &m_device;
