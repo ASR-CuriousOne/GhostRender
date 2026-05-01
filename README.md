@@ -9,6 +9,9 @@ Hopefully get more than box on screen this time.
 <p align="center">
   <img src="docs/rainbowCube.png" alt="rainbowCube">
 </p>
+<p align="center">
+  <img src="docs/texturedSusan.png" alt="textureSusan">
+</p>
 
 ### Current Features
 
@@ -17,5 +20,6 @@ Some :>
 - Multiple Models
 - .obj model loading
 - Camera
+- Textures
 
 
