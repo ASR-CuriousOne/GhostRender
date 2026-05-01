@@ -15,6 +15,11 @@ class GhostSwapchain {
     vk::Format m_swapchainImageFormat;
     vk::Extent2D m_swapchainExtent;
 
+    vk::Format m_swapchainDepthFormat;
+    std::vector<vk::raii::Image> m_depthImages;
+    std::vector<vk::raii::DeviceMemory> m_depthImageMemorys;
+    std::vector<vk::raii::ImageView> m_depthImageViews;
+
     vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
         std::vector<vk::SurfaceFormatKHR> &availableFormats);
 
@@ -34,6 +39,10 @@ class GhostSwapchain {
 
     size_t getImageCount() const { return m_swapchainImages.size(); }
     const vk::Extent2D &getSwapchainExtent() { return m_swapchainExtent; }
+
+    const vk::raii::ImageView &getDepthImageView(int index) const {
+        return m_depthImageViews[index];
+    }
 
     vk::Format getSwapchainImageFormat() const {
         return m_swapchainImageFormat;

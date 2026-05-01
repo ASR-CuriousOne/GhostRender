@@ -1,4 +1,3 @@
-#include "vulkan/vulkan.hpp"
 #include <Ghost/ghostSwapchain.hpp>
 #include <Ghost/swapChainDetails.hpp>
 #include <Ghost/vulkanDevice.hpp>
@@ -77,6 +76,51 @@ GhostSwapchain::GhostSwapchain(const VulkanDevice &device,
                                       1));
 
         m_swapchainImageViews.emplace_back(device, createInfo);
+    }
+
+    m_swapchainDepthFormat = device.findDepthFormat();
+
+    m_depthImages.reserve(imageCount);
+    m_depthImageMemorys.reserve(imageCount);
+    m_depthImageViews.reserve(imageCount);
+
+    for (int i = 0; i < imageCount; i++) {
+        vk::ImageCreateInfo imageInfo{};
+        imageInfo.setImageType(vk::ImageType::e2D)
+            .setExtent({m_swapchainExtent.width, m_swapchainExtent.height, 1})
+            .setMipLevels(1)
+            .setArrayLayers(1)
+            .setFormat(m_swapchainDepthFormat)
+            .setTiling(vk::ImageTiling::eOptimal)
+            .setInitialLayout(vk::ImageLayout::eUndefined)
+            .setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment)
+            .setSamples(vk::SampleCountFlagBits::e1)
+            .setSharingMode(vk::SharingMode::eExclusive);
+
+        m_depthImages.emplace_back(device, imageInfo);
+
+        vk::MemoryRequirements memRequirements =
+            m_depthImages[i].getMemoryRequirements();
+        vk::MemoryAllocateInfo allocInfo{};
+        allocInfo.setAllocationSize(memRequirements.size);
+        allocInfo.setMemoryTypeIndex(
+            device.findMemoryType(memRequirements.memoryTypeBits,
+                                  vk::MemoryPropertyFlagBits::eDeviceLocal));
+
+        m_depthImageMemorys.emplace_back(device, allocInfo);
+        m_depthImages[i].bindMemory(*m_depthImageMemorys[i], 0);
+
+        vk::ImageViewCreateInfo viewInfo{};
+        viewInfo.setImage(*m_depthImages[i])
+            .setViewType(vk::ImageViewType::e2D)
+            .setFormat(m_swapchainDepthFormat)
+            .subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth)
+            .setBaseMipLevel(0)
+            .setLevelCount(1)
+            .setBaseArrayLayer(0)
+            .setLayerCount(1);
+
+        m_depthImageViews.emplace_back(device, viewInfo);
     }
 }
 

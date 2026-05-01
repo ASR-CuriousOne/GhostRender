@@ -50,6 +50,14 @@ PipelineConfigInfo::defaultConfig(PipelineConfigInfo &defaultConfig) {
         .setAttachmentCount(1)
         .setAttachments(defaultConfig.colorBlendAttachment);
 
+    defaultConfig.depthStencilInfo.setDepthTestEnable(vk::True)
+        .setDepthWriteEnable(vk::True)
+        .setDepthCompareOp(vk::CompareOp::eLess)
+        .setDepthBoundsTestEnable(vk::False)
+        .setMinDepthBounds(0.0f)
+        .setMaxDepthBounds(1.0f)
+        .setStencilTestEnable(vk::False);
+
     return defaultConfig;
 }
 } // namespace Ghost

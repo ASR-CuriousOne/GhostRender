@@ -64,27 +64,49 @@ void GhostRenderer::createRenderPass() {
     colorAttachmentRef.setAttachment(0);
     colorAttachmentRef.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
+    vk::AttachmentDescription depthAttachment{};
+    depthAttachment.setFormat(m_device.findDepthFormat())
+        .setSamples(vk::SampleCountFlagBits::e1)
+        .setLoadOp(vk::AttachmentLoadOp::eClear)
+        .setStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+        .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+        .setInitialLayout(vk::ImageLayout::eUndefined)
+        .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+    vk::AttachmentReference depthAttachmentRef{};
+    depthAttachmentRef.setAttachment(1).setLayout(
+        vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
     vk::SubpassDescription subpass;
     subpass.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
         .setColorAttachmentCount(1)
         .setColorAttachments(colorAttachmentRef);
+    subpass.setPDepthStencilAttachment(&depthAttachmentRef);
 
-    vk::SubpassDependency dependancy;
+    vk::SubpassDependency dependency;
 
-    dependancy.setSrcSubpass(vk::SubpassExternal)
+    dependency.setSrcSubpass(vk::SubpassExternal)
         .setDstSubpass(0)
-        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-        .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
+        .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput |
+                         vk::PipelineStageFlagBits::eEarlyFragmentTests)
+        .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput |
+                         vk::PipelineStageFlagBits::eEarlyFragmentTests)
+        .setSrcAccessMask(vk::AccessFlagBits::eNoneKHR)
+        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite |
+                          vk::AccessFlagBits::eDepthStencilAttachmentWrite);
 
     vk::RenderPassCreateInfo renderPassInfo;
 
-    renderPassInfo.setAttachmentCount(1)
-        .setAttachments(colorAttachment)
+    std::array<vk::AttachmentDescription, 2> attachments = {colorAttachment,
+                                                            depthAttachment};
+
+    renderPassInfo.setAttachmentCount(static_cast<uint32_t>(attachments.size()))
+        .setPAttachments(attachments.data())
         .setSubpassCount(1)
         .setSubpasses(subpass)
         .setDependencyCount(1)
-        .setDependencies(dependancy);
+        .setDependencies(dependency);
 
     m_renderPass = vk::raii::RenderPass(m_device, renderPassInfo);
 }
@@ -94,10 +116,13 @@ void GhostRenderer::createFramebuffers() {
     m_framebuffers.reserve(m_swapchain->getImageCount());
 
     for (size_t i = 0; i < m_swapchain->getImageCount(); i++) {
+        std::array<vk::ImageView, 2> attachments = {
+            *m_swapchain->getImageView(i), *m_swapchain->getDepthImageView(i)};
+
         vk::FramebufferCreateInfo createInfo;
         createInfo.setRenderPass(*m_renderPass)
-            .setAttachmentCount(1)
-            .setAttachments(*m_swapchain->getImageView(i))
+            .setAttachmentCount(static_cast<uint32_t>(attachments.size()))
+            .setPAttachments(attachments.data())
             .setWidth(m_swapchain->getSwapchainExtent().width)
             .setHeight(m_swapchain->getSwapchainExtent().height)
             .setLayers(1);
@@ -199,9 +224,12 @@ void GhostRenderer::beginSwapChainRenderPass(
     renderPassInfo.renderArea.offset.setX(0.0f).setY(0.0f);
     renderPassInfo.renderArea.setExtent(m_swapchain->getSwapchainExtent());
 
-    vk::ClearValue clearValue;
-    clearValue.setColor({0.0f, 0.0f, 0.0f, 1.0f});
-    renderPassInfo.setClearValueCount(1).setClearValues(clearValue);
+    std::array<vk::ClearValue, 2> clearValues{};
+    clearValues[0].color =
+        vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f});
+    clearValues[1].depthStencil = vk::ClearDepthStencilValue{1.0f, 0};
+    renderPassInfo.setClearValueCount(static_cast<uint32_t>(clearValues.size()))
+        .setPClearValues(clearValues.data());
 
     commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
