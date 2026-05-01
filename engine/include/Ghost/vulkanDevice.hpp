@@ -58,6 +58,11 @@ class VulkanDevice {
     vk::raii::CommandBuffer beginSingleTimeCommands() const;
     void
     endSingleTimeCommands(const vk::raii::CommandBuffer &commandBuffer) const;
+
+    vk::Format findSupportedFormat(const std::vector<vk::Format> &candidates,
+                                   vk::ImageTiling tiling,
+                                   vk::FormatFeatureFlags features) const;
+    vk::Format findDepthFormat() const;
 };
 
 } // namespace Ghost

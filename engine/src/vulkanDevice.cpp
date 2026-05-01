@@ -149,4 +149,31 @@ void VulkanDevice::endSingleTimeCommands(
     m_transferQueue.submit({submitInfo}, nullptr);
     m_transferQueue.waitIdle();
 }
+
+vk::Format
+VulkanDevice::findSupportedFormat(const std::vector<vk::Format> &candidates,
+                                  vk::ImageTiling tiling,
+                                  vk::FormatFeatureFlags features) const {
+    for (vk::Format format : candidates) {
+        vk::FormatProperties props =
+            m_physicalDevice.getFormatProperties(format);
+        if (tiling == vk::ImageTiling::eLinear &&
+            (props.linearTilingFeatures & features) == features) {
+            return format;
+        } else if (tiling == vk::ImageTiling::eOptimal &&
+                   (props.optimalTilingFeatures & features) == features) {
+            return format;
+        }
+    }
+    throw std::runtime_error("Failed to find supported format!");
+}
+
+vk::Format VulkanDevice::findDepthFormat() const {
+    return findSupportedFormat(
+        {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint,
+         vk::Format::eD24UnormS8Uint},
+        vk::ImageTiling::eOptimal,
+        vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+}
+
 } // namespace Ghost
