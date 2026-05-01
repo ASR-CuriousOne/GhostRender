@@ -6,6 +6,7 @@ namespace Ghost {
 struct Vertex {
     glm::vec3 position;
     glm::vec3 color;
+    glm::vec2 uv;
 
     static std::vector<vk::VertexInputBindingDescription>
     getBindingDescriptions();
@@ -13,7 +14,8 @@ struct Vertex {
     getAttributeDescriptions();
 
     bool operator==(const Vertex &other) const {
-        return position == other.position && color == other.color;
+        return position == other.position && color == other.color &&
+               uv == other.uv;
     }
 };
 

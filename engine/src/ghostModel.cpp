@@ -35,7 +35,7 @@ Vertex::getBindingDescriptions() {
 
 std::vector<vk::VertexInputAttributeDescription>
 Vertex::getAttributeDescriptions() {
-    std::vector<vk::VertexInputAttributeDescription> attributeDescriptions(2);
+    std::vector<vk::VertexInputAttributeDescription> attributeDescriptions(3);
     attributeDescriptions[0]
         .setBinding(0)
         .setLocation(0)
@@ -46,6 +46,11 @@ Vertex::getAttributeDescriptions() {
         .setLocation(1)
         .setFormat(vk::Format::eR32G32B32Sfloat)
         .setOffset(offsetof(Vertex, color));
+    attributeDescriptions[2]
+        .setBinding(0)
+        .setLocation(2)
+        .setFormat(vk::Format::eR32G32Sfloat)
+        .setOffset(offsetof(Vertex, uv));
     return attributeDescriptions;
 }
 
@@ -135,6 +140,12 @@ void GhostModel::Builder::loadModel(const std::string &filepath) {
                                 attrib.colors[3 * index.vertex_index + 2]};
             } else {
                 vertex.color = {1.0f, 1.0f, 1.0f};
+            }
+
+            if (index.texcoord_index >= 0) {
+                vertex.uv = {
+                    attrib.texcoords[2 * index.texcoord_index + 0],
+                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]};
             }
 
             if (uniqueVertices.count(vertex) == 0) {
