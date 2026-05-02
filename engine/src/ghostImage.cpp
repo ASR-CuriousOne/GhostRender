@@ -9,13 +9,13 @@ GhostImage::GhostImage(VulkanDevice &device, uint32_t width, uint32_t height,
                        vk::ImageAspectFlags aspectFlags)
     : m_device(device) {
     vk::ImageCreateInfo imageInfo{};
-
     imageInfo.setImageType(vk::ImageType::e2D)
-        .setMipLevels(1)
-        .setArrayLayers(1)
-        .setFormat(format)
+        .setExtent(m_extent)
+        .setMipLevels(m_mipLevels)
+        .setArrayLayers(m_arrayLayers)
+        .setFormat(m_format)
         .setTiling(tiling)
-        .setInitialLayout(vk::ImageLayout::eUndefined)
+        .setInitialLayout(m_imageLayout)
         .setUsage(usage)
         .setSamples(vk::SampleCountFlagBits::e1)
         .setSharingMode(vk::SharingMode::eExclusive);
@@ -23,25 +23,25 @@ GhostImage::GhostImage(VulkanDevice &device, uint32_t width, uint32_t height,
     m_image = vk::raii::Image(m_device.get(), imageInfo);
 
     vk::MemoryRequirements memRequirements = m_image.getMemoryRequirements();
-
     vk::MemoryAllocateInfo allocInfo{};
     allocInfo.setAllocationSize(memRequirements.size)
-        .setMemoryTypeIndex(
-            device.findMemoryType(memRequirements.memoryTypeBits,
-                                  vk::MemoryPropertyFlagBits::eDeviceLocal));
+        .setMemoryTypeIndex(m_device.get().findMemoryType(
+            memRequirements.memoryTypeBits, properties));
 
     m_memory = vk::raii::DeviceMemory(m_device.get(), allocInfo);
 
-    vk::ImageViewCreateInfo viewInfo{};
+    m_image.bindMemory(m_memory, 0);
 
-    viewInfo.setImage(m_image)
+    vk::ImageViewCreateInfo viewInfo{};
+    viewInfo.setImage(*m_image)
         .setViewType(vk::ImageViewType::e2D)
-        .setFormat(format)
-        .subresourceRange.setAspectMask(aspectFlags)
+        .setFormat(m_format);
+
+    viewInfo.subresourceRange.setAspectMask(m_aspectFlags)
         .setBaseMipLevel(0)
-        .setLevelCount(1)
+        .setLevelCount(m_mipLevels)
         .setBaseArrayLayer(0)
-        .setLayerCount(1);
+        .setLayerCount(m_arrayLayers);
 
     m_imageView = vk::raii::ImageView(m_device.get(), viewInfo);
 }
