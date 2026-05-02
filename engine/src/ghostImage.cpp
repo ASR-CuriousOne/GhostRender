@@ -1,5 +1,4 @@
 #include <Ghost/ghostImage.hpp>
-#include <vulkan/vulkan.hpp>
 
 namespace Ghost {
 GhostImage::GhostImage(VulkanDevice &device, uint32_t width, uint32_t height,
