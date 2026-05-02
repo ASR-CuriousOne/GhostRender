@@ -4,7 +4,7 @@
 namespace Ghost {
 class GhostBuffer {
   public:
-    GhostBuffer(const VulkanDevice &device, vk::DeviceSize bufferSize,
+    GhostBuffer(VulkanDevice &device, vk::DeviceSize bufferSize,
                 vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
     ~GhostBuffer();
 
@@ -39,7 +39,7 @@ class GhostBuffer {
     }
 
   private:
-    const VulkanDevice &m_device;
+	std::reference_wrapper<VulkanDevice> m_device;
 
     vk::raii::Buffer m_buffer = nullptr;
     vk::raii::DeviceMemory m_memory = nullptr;

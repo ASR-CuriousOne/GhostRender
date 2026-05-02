@@ -1,5 +1,6 @@
 #pragma once
 #include <Ghost/ghostBuffer.hpp>
+#include <functional>
 #include <glm/glm.hpp>
 
 namespace Ghost {
@@ -42,7 +43,7 @@ class GhostModel {
     void draw(const vk::raii::CommandBuffer &commandBuffer);
 
   private:
-    const VulkanDevice &m_device;
+    std::reference_wrapper<VulkanDevice> m_device;
     std::unique_ptr<GhostBuffer> m_vertexBuffer;
     std::unique_ptr<GhostBuffer> m_indexBuffer;
     uint32_t m_vertexCount;

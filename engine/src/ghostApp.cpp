@@ -1,5 +1,3 @@
-#include "Ghost/ghostRenderer.hpp"
-#include "vulkan/vulkan.hpp"
 #include <Ghost/ghostApp.hpp>
 #include <Ghost/utils.hpp>
 #include <memory>

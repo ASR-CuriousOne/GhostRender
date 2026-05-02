@@ -75,14 +75,14 @@ GhostModel::GhostModel(VulkanDevice &device,
             vk::BufferUsageFlagBits::eVertexBuffer,
         vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-    auto commandBuffer = m_device.beginSingleTimeCommands();
+    auto commandBuffer = m_device.get().beginSingleTimeCommands();
 
     vk::BufferCopy copyRegion;
     copyRegion.setSrcOffset(0).setDstOffset(0).setSize(bufferSize);
     commandBuffer.copyBuffer(stagingVertexBuffer.getBuffer(),
                              m_vertexBuffer->getBuffer(), copyRegion);
 
-    m_device.endSingleTimeCommands(commandBuffer);
+    m_device.get().endSingleTimeCommands(commandBuffer);
 
     vk::DeviceSize indexBufferSize = sizeof(uint32_t) * m_indexCount;
     GhostBuffer stagingIndexBuffer(
@@ -98,14 +98,14 @@ GhostModel::GhostModel(VulkanDevice &device,
                                           vk::BufferUsageFlagBits::eIndexBuffer,
                                       vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-    commandBuffer = m_device.beginSingleTimeCommands();
+    commandBuffer = m_device.get().beginSingleTimeCommands();
 
     vk::BufferCopy indexCopyRegion;
     indexCopyRegion.setSrcOffset(0).setDstOffset(0).setSize(indexBufferSize);
     commandBuffer.copyBuffer(stagingIndexBuffer.getBuffer(),
                              m_indexBuffer->getBuffer(), indexCopyRegion);
 
-    m_device.endSingleTimeCommands(commandBuffer);
+    m_device.get().endSingleTimeCommands(commandBuffer);
 }
 
 GhostModel::~GhostModel() {}

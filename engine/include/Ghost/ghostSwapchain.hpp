@@ -1,5 +1,4 @@
 #pragma once
-#include "vulkan/vulkan.hpp"
 #include <Ghost/ghostSurface.hpp>
 #include <Ghost/vulkanDevice.hpp>
 #include <Ghost/windowGLFW.hpp>

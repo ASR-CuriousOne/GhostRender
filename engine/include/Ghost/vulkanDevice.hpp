@@ -6,34 +6,20 @@
 namespace Ghost {
 
 class VulkanDevice {
-
-    vk::raii::PhysicalDevices m_physicalDevices;
-    vk::raii::PhysicalDevice m_physicalDevice = nullptr;
-
-    const std::vector<const char *> m_deviceExtensions = {
-        vk::KHRSwapchainExtensionName};
-
-    QueueFamilyIndicies m_queueFamilyIndicies;
-
-    vk::raii::Device m_device = nullptr;
-
-    vk::raii::Queue m_graphicsQueue = nullptr;
-    vk::raii::Queue m_presentQueue = nullptr;
-    vk::raii::Queue m_transferQueue = nullptr;
-
-    vk::raii::CommandPool m_transferCommandPool = nullptr;
-
-    bool isDeviceSuitable(const vk::raii::PhysicalDevice &physicalDevice,
-                          const vk::raii::SurfaceKHR &surface);
-
-    bool checkExtensions(const vk::raii::PhysicalDevice &physicalDevice);
-
   public:
     VulkanDevice(const vk::raii::Instance &instance,
                  const vk::raii::SurfaceKHR &surface);
+    ~VulkanDevice() = default;
+
+    VulkanDevice(const VulkanDevice &) = delete;
+    VulkanDevice &operator=(const VulkanDevice &) = delete;
+
+    VulkanDevice(VulkanDevice &&) = default;
+    VulkanDevice &operator=(VulkanDevice &&) = default;
 
     operator const vk::raii::Device &() const { return m_device; }
     const vk::raii::Device *operator->() const { return &m_device; }
+
     operator const vk::raii::PhysicalDevice &() const {
         return m_physicalDevice;
     }
@@ -63,6 +49,28 @@ class VulkanDevice {
                                    vk::ImageTiling tiling,
                                    vk::FormatFeatureFlags features) const;
     vk::Format findDepthFormat() const;
+
+  private:
+    vk::raii::PhysicalDevices m_physicalDevices = nullptr;
+    vk::raii::PhysicalDevice m_physicalDevice = nullptr;
+
+    static constexpr std::array<const char *, 1> m_deviceExtensions = {
+        vk::KHRSwapchainExtensionName};
+
+    QueueFamilyIndicies m_queueFamilyIndicies;
+
+    vk::raii::Device m_device = nullptr;
+
+    vk::raii::Queue m_graphicsQueue = nullptr;
+    vk::raii::Queue m_presentQueue = nullptr;
+    vk::raii::Queue m_transferQueue = nullptr;
+
+    vk::raii::CommandPool m_transferCommandPool = nullptr;
+
+    bool isDeviceSuitable(const vk::raii::PhysicalDevice &physicalDevice,
+                          const vk::raii::SurfaceKHR &surface);
+
+    bool checkExtensions(const vk::raii::PhysicalDevice &physicalDevice);
 };
 
 } // namespace Ghost
