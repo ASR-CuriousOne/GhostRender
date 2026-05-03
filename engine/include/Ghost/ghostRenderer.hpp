@@ -10,7 +10,7 @@
 #include <vulkan/vulkan_raii.hpp>
 
 namespace Ghost {
-const int MAX_FRAMES_IN_FLIGHT = 2;
+const int MAX_FRAMES_IN_FLIGHT = 3;
 class GhostRenderer {
   public:
     GhostRenderer(WindowGLFW &window, VulkanDevice &device,

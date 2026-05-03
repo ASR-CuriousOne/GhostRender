@@ -1,4 +1,5 @@
 #pragma once
+#include <Ghost/ghostImage.hpp>
 #include <Ghost/ghostSurface.hpp>
 #include <Ghost/vulkanDevice.hpp>
 #include <Ghost/windowGLFW.hpp>
@@ -15,9 +16,7 @@ class GhostSwapchain {
     vk::Extent2D m_swapchainExtent;
 
     vk::Format m_swapchainDepthFormat;
-    std::vector<vk::raii::Image> m_depthImages;
-    std::vector<vk::raii::DeviceMemory> m_depthImageMemorys;
-    std::vector<vk::raii::ImageView> m_depthImageViews;
+    std::vector<std::unique_ptr<GhostImage>> m_depthImages;
 
     vk::SurfaceFormatKHR chooseSwapSurfaceFormat(
         std::vector<vk::SurfaceFormatKHR> &availableFormats);
@@ -30,7 +29,7 @@ class GhostSwapchain {
                      const WindowGLFW &window);
 
   public:
-    GhostSwapchain(const VulkanDevice &device, const WindowGLFW &window,
+    GhostSwapchain(VulkanDevice &device, const WindowGLFW &window,
                    const GhostSurface &surface);
     ~GhostSwapchain();
 
@@ -40,7 +39,7 @@ class GhostSwapchain {
     const vk::Extent2D &getSwapchainExtent() { return m_swapchainExtent; }
 
     const vk::raii::ImageView &getDepthImageView(int index) const {
-        return m_depthImageViews[index];
+        return m_depthImages[index]->getImageView();
     }
 
     vk::Format getSwapchainImageFormat() const {

@@ -6,7 +6,9 @@ GhostImage::GhostImage(VulkanDevice &device, uint32_t width, uint32_t height,
                        vk::ImageUsageFlags usage,
                        vk::MemoryPropertyFlags properties,
                        vk::ImageAspectFlags aspectFlags)
-    : m_device(device) {
+    : m_device(device), m_format(format), m_aspectFlags(aspectFlags) {
+	m_extent.setWidth(width).setHeight(height).setDepth(1);
+
     vk::ImageCreateInfo imageInfo{};
     imageInfo.setImageType(vk::ImageType::e2D)
         .setExtent(m_extent)
@@ -45,7 +47,7 @@ GhostImage::GhostImage(VulkanDevice &device, uint32_t width, uint32_t height,
     m_imageView = vk::raii::ImageView(m_device.get(), viewInfo);
 }
 
-void GhostImage::trasitionImageLayout(vk::raii::CommandBuffer &cmd,
+void GhostImage::transitionImageLayout(vk::raii::CommandBuffer &cmd,
                                       vk::ImageLayout newLayout) {
     vk::ImageMemoryBarrier barrier{};
     barrier.oldLayout = m_imageLayout;

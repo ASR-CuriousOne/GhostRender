@@ -28,7 +28,7 @@ class GhostImage {
     uint32_t getArrayLayers() const { return m_arrayLayers; }
     vk::ImageAspectFlags getAspect() const { return m_aspectFlags; }
 
-    void trasitionImageLayout(vk::raii::CommandBuffer& cmd, vk::ImageLayout newLayout);
+    void transitionImageLayout(vk::raii::CommandBuffer& cmd, vk::ImageLayout newLayout);
 
   private:
     std::reference_wrapper<VulkanDevice> m_device;
