@@ -26,6 +26,9 @@ class GhostCamera {
     glm::mat4 m_projectionMatrix{1.f};
     glm::mat4 m_viewMatrix{1.f};
 
+    glm::vec3 m_position{0.0f};
+    glm::vec3 m_rotation{0.0f};
+
     float m_accumulatedTime = 0.0f;
 };
 } // namespace Ghost

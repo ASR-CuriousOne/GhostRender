@@ -65,29 +65,55 @@ void GhostApp::initDescriptors() {
 void GhostApp::loadGameObjects() {
     auto env = Utils::loadEnvFile(".env");
 
-    auto model = GhostModel::createModelFromFile(m_device, env["MODEL_PATH"]);
+    auto model1 =
+        GhostModel::createModelFromFile(m_device, env["MODEL_PATH_1"]);
 
-    std::string texPath = env.contains("TEXTURE_PATH")
-                              ? env["TEXTURE_PATH"]
-                              : "assets/textures/texture.jpg";
-    auto texture = std::make_shared<GhostTexture>(m_device, texPath);
+    std::string texPath1 = env.contains("TEXTURE_PATH_1")
+                               ? env["TEXTURE_PATH_1"]
+                               : "assets/textures/texture1.jpg";
+    auto texture1 = std::make_shared<GhostTexture>(m_device, texPath1);
 
-    auto gameObject = GhostGameObject::createGameObject();
-    gameObject.model = model;
-    gameObject.texture = texture;
-    gameObject.transform.translation = {0.0f, 0.0f, 0.0f};
-    gameObject.transform.scale = {1.0f, 1.0f, 1.0f};
+    auto gameObject1 = GhostGameObject::createGameObject();
+    gameObject1.model = model1;
+    gameObject1.texture = texture1;
+    gameObject1.transform.translation = {-2.0f, 0.0f, 0.0f};
+    gameObject1.transform.scale = {1.0f, 1.0f, 1.0f};
 
-    auto texSets = m_globalPool->allocateDescriptorSets(
+    auto texSets1 = m_globalPool->allocateDescriptorSets(
         1, m_textureSetLayout->getDescriptorSetLayout());
-    gameObject.textureDescriptorSet = std::move(texSets[0]);
+    gameObject1.textureDescriptorSet = std::move(texSets1[0]);
 
-    auto imageInfo = texture->descriptorInfo();
+    auto imageInfo1 = texture1->descriptorInfo();
     GhostDescriptorWriter(*m_textureSetLayout)
-        .writeImage(0, &imageInfo)
-        .build(gameObject.textureDescriptorSet, m_device);
+        .writeImage(0, &imageInfo1)
+        .build(gameObject1.textureDescriptorSet, m_device);
 
-    m_gameObjects.push_back(std::move(gameObject));
+    m_gameObjects.push_back(std::move(gameObject1));
+
+    auto model2 =
+        GhostModel::createModelFromFile(m_device, env["MODEL_PATH_2"]);
+
+    std::string texPath2 = env.contains("TEXTURE_PATH_2")
+                               ? env["TEXTURE_PATH_2"]
+                               : "assets/textures/texture2.jpg";
+    auto texture2 = std::make_shared<GhostTexture>(m_device, texPath2);
+
+    auto gameObject2 = GhostGameObject::createGameObject();
+    gameObject2.model = model2;
+    gameObject2.texture = texture2;
+    gameObject2.transform.translation = {2.0f, 0.0f, 0.0f};
+    gameObject2.transform.scale = {1.0f, 1.0f, 1.0f};
+
+    auto texSets2 = m_globalPool->allocateDescriptorSets(
+        1, m_textureSetLayout->getDescriptorSetLayout());
+    gameObject2.textureDescriptorSet = std::move(texSets2[0]);
+
+    auto imageInfo2 = texture2->descriptorInfo();
+    GhostDescriptorWriter(*m_textureSetLayout)
+        .writeImage(0, &imageInfo2)
+        .build(gameObject2.textureDescriptorSet, m_device);
+
+    m_gameObjects.push_back(std::move(gameObject2));
 }
 
 void GhostApp::updateUniformBuffer(uint32_t currentImage,
@@ -107,6 +133,8 @@ void GhostApp::run() {
     std::clog << "Application Loop: Started..." << std::endl;
 
     GhostCamera camera{};
+
+    camera.setViewTarget({5.0f, 5.0f, 2.5f}, {0.0f, 0.0f, 0.0f});
 
     auto currentTime = std::chrono::high_resolution_clock::now();
 
@@ -128,8 +156,12 @@ void GhostApp::run() {
         float aspect = (float)m_renderer.getSwapchainExtent().width /
                        (float)m_renderer.getSwapchainExtent().height;
         camera.setPerspectiveProjection(glm::radians(45.0f), aspect, 0.1f,
-                                        10.0f);
+                                        100.0f);
         camera.update(frameTime);
+
+        for (auto &obj : m_gameObjects) {
+            obj.update(frameTime);
+        }
 
         if (auto &commandBuffer = m_renderer.beginFrame();
             m_renderer.isFrameInProgress()) {
