@@ -1,4 +1,5 @@
 #include <Ghost/windowGLFW.hpp>
+#include <iostream>
 
 namespace Ghost {
 WindowGLFW::WindowGLFW() {
@@ -8,6 +9,15 @@ WindowGLFW::WindowGLFW() {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     m_window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+
+	if (!m_window) {
+        const char* description;
+        int code = glfwGetError(&description);
+        std::cerr << "Failed to create GLFW window! Error Code: " << code 
+                  << " Description: " << (description ? description : "Unknown") << std::endl;
+        glfwTerminate();
+        throw std::runtime_error("Failed to create GLFW window");
+    }
 
     glfwSetWindowUserPointer(m_window, this);
     glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
