@@ -22,6 +22,7 @@ GhostApp::GhostApp()
 }
 
 void GhostApp::initDescriptors() {
+    m_descriptorManager = std::make_unique<GhostDescriptorManager>(m_device);
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         m_uniformBuffers.push_back(std::make_unique<GhostBuffer>(
             m_device, sizeof(Ubo), vk::BufferUsageFlagBits::eUniformBuffer,
@@ -30,33 +31,24 @@ void GhostApp::initDescriptors() {
         m_uniformBuffers[i]->map();
     }
 
-    m_globalSetLayout = GhostDescriptorSetLayout::Builder(m_device)
-                            .addBinding(0, vk::DescriptorType::eUniformBuffer,
-                                        vk::ShaderStageFlagBits::eVertex)
-                            .build();
+    m_descriptorManager->registerLayout(
+        "global", GhostDescriptorSetLayout::Builder(m_device)
+                      .addBinding(0, vk::DescriptorType::eUniformBuffer,
+                                  vk::ShaderStageFlagBits::eVertex)
+                      .build());
 
-    m_textureSetLayout =
-        GhostDescriptorSetLayout::Builder(m_device)
-            .addBinding(0, vk::DescriptorType::eCombinedImageSampler,
-                        vk::ShaderStageFlagBits::eFragment)
-            .build();
+    m_descriptorManager->registerLayout(
+        "texture", GhostDescriptorSetLayout::Builder(m_device)
+                       .addBinding(0, vk::DescriptorType::eCombinedImageSampler,
+                                   vk::ShaderStageFlagBits::eFragment)
+                       .build());
 
-    m_globalPool =
-        GhostDescriptorPool::Builder(m_device)
-            .setMaxSets(MAX_FRAMES_IN_FLIGHT + 50)
-            .addPoolSize(vk::DescriptorType::eUniformBuffer,
-                         MAX_FRAMES_IN_FLIGHT)
-            .addPoolSize(vk::DescriptorType::eCombinedImageSampler, 50)
-            .setPoolFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
-            .build();
-
-    m_descriptorSets = m_globalPool->allocateDescriptorSets(
-        MAX_FRAMES_IN_FLIGHT, m_globalSetLayout->getDescriptorSetLayout());
+    m_descriptorSets =
+        m_descriptorManager->allocateSets("global", MAX_FRAMES_IN_FLIGHT);
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         auto bufferInfo = m_uniformBuffers[i]->descriptorInfo();
-
-        GhostDescriptorWriter(*m_globalSetLayout)
+        GhostDescriptorWriter(m_descriptorManager->getLayout("global"))
             .writeBuffer(0, &bufferInfo)
             .build(m_descriptorSets[i], m_device);
     }
@@ -64,6 +56,8 @@ void GhostApp::initDescriptors() {
 
 void GhostApp::loadGameObjects() {
     auto env = Utils::loadEnvFile(".env");
+
+    auto texSets = m_descriptorManager->allocateSets("texture", 2);
 
     auto model1 =
         GhostModel::createModelFromFile(m_device, env["MODEL_PATH_1"]);
@@ -79,12 +73,10 @@ void GhostApp::loadGameObjects() {
     gameObject1.transform.translation = {-2.0f, 0.0f, 0.0f};
     gameObject1.transform.scale = {1.0f, 1.0f, 1.0f};
 
-    auto texSets1 = m_globalPool->allocateDescriptorSets(
-        1, m_textureSetLayout->getDescriptorSetLayout());
-    gameObject1.textureDescriptorSet = std::move(texSets1[0]);
+    gameObject1.textureDescriptorSet = std::move(texSets[0]);
 
     auto imageInfo1 = texture1->descriptorInfo();
-    GhostDescriptorWriter(*m_textureSetLayout)
+    GhostDescriptorWriter(m_descriptorManager->getLayout("texture"))
         .writeImage(0, &imageInfo1)
         .build(gameObject1.textureDescriptorSet, m_device);
 
@@ -104,12 +96,10 @@ void GhostApp::loadGameObjects() {
     gameObject2.transform.translation = {2.0f, 0.0f, 0.0f};
     gameObject2.transform.scale = {1.0f, 1.0f, 1.0f};
 
-    auto texSets2 = m_globalPool->allocateDescriptorSets(
-        1, m_textureSetLayout->getDescriptorSetLayout());
-    gameObject2.textureDescriptorSet = std::move(texSets2[0]);
+    gameObject2.textureDescriptorSet = std::move(texSets[1]);
 
-    auto imageInfo2 = texture2->descriptorInfo();
-    GhostDescriptorWriter(*m_textureSetLayout)
+    auto imageInfo2 = texture1->descriptorInfo();
+    GhostDescriptorWriter(m_descriptorManager->getLayout("texture"))
         .writeImage(0, &imageInfo2)
         .build(gameObject2.textureDescriptorSet, m_device);
 
@@ -140,8 +130,8 @@ void GhostApp::run() {
 
     SimpleRenderSystem simpleRenderSystem{
         m_device, m_renderer.getSwapChainRenderPass(),
-        m_globalSetLayout->getDescriptorSetLayout(),
-        m_textureSetLayout->getDescriptorSetLayout()};
+        m_descriptorManager->getLayout("global").getDescriptorSetLayout(),
+        m_descriptorManager->getLayout("texture").getDescriptorSetLayout()};
 
     while (!glfwWindowShouldClose(m_window) && !s_quitFlag.load()) {
         glfwPollEvents();
