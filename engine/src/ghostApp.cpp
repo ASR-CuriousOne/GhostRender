@@ -161,8 +161,9 @@ void GhostApp::run() {
 
             m_renderer.beginSwapChainRenderPass(commandBuffer);
 
-            simpleRenderSystem.renderGameObjects(commandBuffer, m_gameObjects,
-                                                 m_descriptorSets[frameIndex]);
+            // simpleRenderSystem.renderGameObjects(commandBuffer,
+            // m_gameObjects,
+            //                                     m_descriptorSets[frameIndex]);
 
             m_renderer.endSwapChainRenderPass(commandBuffer);
             m_renderer.endFrame();

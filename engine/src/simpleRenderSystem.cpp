@@ -66,32 +66,31 @@ void SimpleRenderSystem::createPipeline(vk::RenderPass renderPass) {
 }
 
 void SimpleRenderSystem::renderGameObjects(
-    const vk::raii::CommandBuffer &commandBuffer,
-    std::vector<GhostGameObject> &gameObjects,
+    const FrameInfo &frameInfo, std::vector<GhostRenderObject> &gameObjects,
     const vk::raii::DescriptorSet &globalDescriptorSet) {
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
-                               **m_graphicsPipeline);
+    frameInfo.commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
+                                         **m_graphicsPipeline);
 
-    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-                                     *m_pipelineLayout, 0,
-                                     {*globalDescriptorSet}, nullptr);
+    frameInfo.commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+                                               *m_pipelineLayout, 0,
+                                               {*globalDescriptorSet}, nullptr);
 
     for (auto &obj : gameObjects) {
         PushConstantData push{};
-        push.model = obj.transform.mat4();
+        push.model = obj.transformMatrix;
 
-        commandBuffer.pushConstants<PushConstantData>(
+        frameInfo.commandBuffer.pushConstants<PushConstantData>(
             *m_pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, push);
 
-        if (*obj.textureDescriptorSet) {
-            commandBuffer.bindDescriptorSets(
+        if (obj.textureDescriptorSet) {
+            frameInfo.commandBuffer.bindDescriptorSets(
                 vk::PipelineBindPoint::eGraphics, *m_pipelineLayout, 1,
-                {*obj.textureDescriptorSet}, nullptr);
+                {obj.textureDescriptorSet}, nullptr);
         }
 
-        obj.model->bind(commandBuffer);
-        obj.model->draw(commandBuffer);
+        obj.model->bind(frameInfo.commandBuffer);
+        obj.model->draw(frameInfo.commandBuffer);
     }
 }
 

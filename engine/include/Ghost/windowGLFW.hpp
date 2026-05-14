@@ -15,6 +15,8 @@ struct WindowGLFW {
 
     operator GLFWwindow *() const { return m_window; }
 
+	bool shouldClose(){return glfwWindowShouldClose(m_window);}
+
     static void framebufferResizeCallback(GLFWwindow *window, int width,
                                           int height);
 };
