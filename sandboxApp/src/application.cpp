@@ -1,8 +1,7 @@
-#include <Ghost/application.hpp>
+#include "application.hpp"
 #include <Ghost/simpleRenderSystem.hpp>
 #include <chrono>
 
-namespace Ghost {
 Application::Application()
     : m_window(), m_instance(), m_surface(m_instance, m_window),
       m_device(m_instance, m_surface),
@@ -30,7 +29,7 @@ void Application::run() {
         if (auto &commandBuffer = m_renderer.beginFrame();
             m_renderer.isFrameInProgress()) {
 
-            FrameInfo frameInfo{
+            Ghost::FrameInfo frameInfo{
                 static_cast<uint32_t>(m_renderer.getFrameIndex()), frameTime,
                 commandBuffer};
 
@@ -48,9 +47,4 @@ void Application::run() {
     std::clog << "Application Loop: Stopped." << std::endl;
 };
 
-void Ghost::Application::close() {
-    m_isRunning = false;
-}
-
-
-} // namespace Ghost
+void Application::close() { m_isRunning = false; }

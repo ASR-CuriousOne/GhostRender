@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Ghost/application.hpp>
+#include "application.hpp"
 #include <Ghost/ghostBuffer.hpp>
 #include <Ghost/ghostCamera.hpp>
 #include <Ghost/ghostGameObject.hpp>
@@ -13,7 +13,7 @@ struct GlobalUbo {
     glm::mat4 view{1.f};
 };
 
-class SandboxApp : public Ghost::Application {
+class SandboxApp : public Application {
   public:
     SandboxApp();
     ~SandboxApp() override = default;
