@@ -14,7 +14,7 @@ void SandboxApp::onInit() {
     loadGameObjects();
 
     m_simpleRenderSystem = std::make_unique<Ghost::SimpleRenderSystem>(
-        m_device, m_renderer.getSwapChainRenderPass(),
+        m_engine->getDevice(), m_engine->getRenderPass(),
         m_descriptorManager->getLayout("global").getDescriptorSetLayout(),
         m_descriptorManager->getLayout("texture").getDescriptorSetLayout());
 
@@ -30,8 +30,7 @@ void SandboxApp::onUpdate(float dt) {
         close();
     }
 
-    float aspect = (float)m_renderer.getSwapchainExtent().width /
-                   (float)m_renderer.getSwapchainExtent().height;
+    float aspect = m_engine->getAspectRatio();
     m_camera.setPerspectiveProjection(glm::radians(45.0f), aspect, 0.1f,
                                       100.0f);
     m_camera.update(dt);
@@ -72,11 +71,9 @@ void SandboxApp::onShutdown() {
 }
 
 void SandboxApp::initDescriptors() {
-    m_descriptorManager =
-        std::make_unique<Ghost::GhostDescriptorManager>(m_device);
     for (int i = 0; i < Ghost::MAX_FRAMES_IN_FLIGHT; i++) {
         m_uniformBuffers.push_back(std::make_unique<Ghost::GhostBuffer>(
-            m_device, sizeof(GlobalUbo),
+            m_engine->getDevice(), sizeof(GlobalUbo),
             vk::BufferUsageFlagBits::eUniformBuffer,
             vk::MemoryPropertyFlagBits::eHostVisible |
                 vk::MemoryPropertyFlagBits::eHostCoherent));
@@ -84,16 +81,18 @@ void SandboxApp::initDescriptors() {
     }
 
     m_descriptorManager->registerLayout(
-        "global", Ghost::GhostDescriptorSetLayout::Builder(m_device)
-                      .addBinding(0, vk::DescriptorType::eUniformBuffer,
-                                  vk::ShaderStageFlagBits::eVertex)
-                      .build());
+        "global",
+        Ghost::GhostDescriptorSetLayout::Builder(m_engine->getDevice())
+            .addBinding(0, vk::DescriptorType::eUniformBuffer,
+                        vk::ShaderStageFlagBits::eVertex)
+            .build());
 
     m_descriptorManager->registerLayout(
-        "texture", Ghost::GhostDescriptorSetLayout::Builder(m_device)
-                       .addBinding(0, vk::DescriptorType::eCombinedImageSampler,
-                                   vk::ShaderStageFlagBits::eFragment)
-                       .build());
+        "texture",
+        Ghost::GhostDescriptorSetLayout::Builder(m_engine->getDevice())
+            .addBinding(0, vk::DescriptorType::eCombinedImageSampler,
+                        vk::ShaderStageFlagBits::eFragment)
+            .build());
 
     m_descriptorSets = m_descriptorManager->allocateSets(
         "global", Ghost::MAX_FRAMES_IN_FLIGHT);
@@ -102,7 +101,7 @@ void SandboxApp::initDescriptors() {
         auto bufferInfo = m_uniformBuffers[i]->descriptorInfo();
         Ghost::GhostDescriptorWriter(m_descriptorManager->getLayout("global"))
             .writeBuffer(0, &bufferInfo)
-            .build(m_descriptorSets[i], m_device);
+            .build(m_descriptorSets[i], m_engine->getDevice());
     }
 }
 
@@ -111,13 +110,14 @@ void SandboxApp::loadGameObjects() {
 
     auto texSets = m_descriptorManager->allocateSets("texture", 2);
 
-    auto model1 =
-        Ghost::GhostModel::createModelFromFile(m_device, env["MODEL_PATH_1"]);
+    auto model1 = Ghost::GhostModel::createModelFromFile(m_engine->getDevice(),
+                                                         env["MODEL_PATH_1"]);
 
     std::string texPath1 = env.contains("TEXTURE_PATH_1")
                                ? env["TEXTURE_PATH_1"]
                                : "assets/textures/texture1.jpg";
-    auto texture1 = std::make_shared<Ghost::GhostTexture>(m_device, texPath1);
+    auto texture1 =
+        std::make_shared<Ghost::GhostTexture>(m_engine->getDevice(), texPath1);
 
     auto gameObject1 = Ghost::GhostGameObject::createGameObject();
     gameObject1.model = model1;
@@ -130,17 +130,18 @@ void SandboxApp::loadGameObjects() {
     auto imageInfo1 = texture1->descriptorInfo();
     Ghost::GhostDescriptorWriter(m_descriptorManager->getLayout("texture"))
         .writeImage(0, &imageInfo1)
-        .build(gameObject1.textureDescriptorSet, m_device);
+        .build(gameObject1.textureDescriptorSet, m_engine->getDevice());
 
     m_gameObjects.push_back(std::move(gameObject1));
 
-    auto model2 =
-        Ghost::GhostModel::createModelFromFile(m_device, env["MODEL_PATH_2"]);
+    auto model2 = Ghost::GhostModel::createModelFromFile(m_engine->getDevice(),
+                                                         env["MODEL_PATH_2"]);
 
     std::string texPath2 = env.contains("TEXTURE_PATH_2")
                                ? env["TEXTURE_PATH_2"]
                                : "assets/textures/texture2.jpg";
-    auto texture2 = std::make_shared<Ghost::GhostTexture>(m_device, texPath2);
+    auto texture2 =
+        std::make_shared<Ghost::GhostTexture>(m_engine->getDevice(), texPath2);
 
     auto gameObject2 = Ghost::GhostGameObject::createGameObject();
     gameObject2.model = model2;
@@ -153,7 +154,7 @@ void SandboxApp::loadGameObjects() {
     auto imageInfo2 = texture1->descriptorInfo();
     Ghost::GhostDescriptorWriter(m_descriptorManager->getLayout("texture"))
         .writeImage(0, &imageInfo2)
-        .build(gameObject2.textureDescriptorSet, m_device);
+        .build(gameObject2.textureDescriptorSet, m_engine->getDevice());
 
     m_gameObjects.push_back(std::move(gameObject2));
 }

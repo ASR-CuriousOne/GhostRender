@@ -1,8 +1,6 @@
 #pragma once
 #include <Ghost/ghostImage.hpp>
-#include <Ghost/ghostSurface.hpp>
 #include <Ghost/vulkanDevice.hpp>
-#include <Ghost/windowGLFW.hpp>
 #include <cstdint>
 #include <vulkan/vulkan_raii.hpp>
 
@@ -26,11 +24,11 @@ class GhostSwapchain {
 
     vk::Extent2D
     chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities,
-                     const WindowGLFW &window);
+                     const vk::Extent2D &currentExtent);
 
   public:
-    GhostSwapchain(VulkanDevice &device, const WindowGLFW &window,
-                   const GhostSurface &surface);
+    GhostSwapchain(VulkanDevice &device, const vk::SurfaceKHR &surface,
+                   const vk::Extent2D &currentExtent);
     ~GhostSwapchain();
 
     vk::SwapchainKHR operator*() const { return m_swapchain; }

@@ -20,9 +20,7 @@ class VulkanDevice {
     operator const vk::raii::Device &() const { return m_device; }
     const vk::raii::Device *operator->() const { return &m_device; }
 
-    operator const vk::raii::PhysicalDevice &() const {
-        return m_physicalDevice;
-    }
+    operator const vk::PhysicalDevice &() const { return *m_physicalDevice; }
 
     vk::PhysicalDeviceProperties getPhysicalDeviceProperties() {
         return m_physicalDevice.getProperties();

@@ -1,9 +1,7 @@
 #pragma once
 #include <Ghost/ghostCommandPool.hpp>
-#include <Ghost/ghostSurface.hpp>
 #include <Ghost/ghostSwapchain.hpp>
 #include <Ghost/vulkanDevice.hpp>
-#include <Ghost/windowGLFW.hpp>
 #include <cstdint>
 #include <memory>
 #include <vulkan/vulkan.hpp>
@@ -13,8 +11,8 @@ namespace Ghost {
 const int MAX_FRAMES_IN_FLIGHT = 3;
 class GhostRenderer {
   public:
-    GhostRenderer(WindowGLFW &window, VulkanDevice &device,
-                  GhostSurface &surface);
+    GhostRenderer(VulkanDevice &device,vk::SurfaceKHR surface, uint32_t width,
+                  uint32_t height);
     ~GhostRenderer();
 
     vk::raii::CommandBuffer &beginFrame();
@@ -27,7 +25,10 @@ class GhostRenderer {
 
     bool isFrameInProgress() { return m_isFrameStarted; }
 
-	vk::Extent2D getSwapchainExtent() const {return m_swapchain->getSwapchainExtent();}
+    vk::Extent2D getSwapchainExtent() const {
+        return m_swapchain->getSwapchainExtent();
+    }
+    void flagFramebufferResized(uint32_t width, uint32_t height);
 
   private:
     void createCommandBuffers();
@@ -37,9 +38,9 @@ class GhostRenderer {
     void createRenderPass();
     void createFramebuffers();
 
-    WindowGLFW &m_window;
     VulkanDevice &m_device;
-    GhostSurface &m_surface;
+    vk::Extent2D m_extent;
+    vk::SurfaceKHR m_surface;
 
     std::unique_ptr<GhostSwapchain> m_swapchain;
     GhostCommandPool m_commandPool;
@@ -55,5 +56,6 @@ class GhostRenderer {
     uint32_t m_currentFrame = 0;
     uint32_t m_currentImageIndex = 0;
     bool m_isFrameStarted = false;
+    bool m_framebufferResized = false;
 };
 } // namespace Ghost

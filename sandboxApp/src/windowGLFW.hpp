@@ -1,7 +1,6 @@
 #pragma once
 #include <GLFW/glfw3.h>
 
-namespace Ghost {
 struct WindowGLFW {
     GLFWwindow *m_window;
 
@@ -20,4 +19,3 @@ struct WindowGLFW {
     static void framebufferResizeCallback(GLFWwindow *window, int width,
                                           int height);
 };
-} // namespace Ghost

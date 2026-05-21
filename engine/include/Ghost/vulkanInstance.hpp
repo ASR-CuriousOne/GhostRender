@@ -36,12 +36,13 @@ class VulkanInstance {
 
     bool checkValidationLayerSupport();
 
-    std::vector<const char *> checkAndReturnRequiredExtensions();
+    std::vector<const char *> checkAndReturnRequiredExtensions(
+        const std::vector<const char *> &requiredExtensions);
 
   public:
-    VulkanInstance();
+    VulkanInstance(const std::vector<const char *> &requiredExtensions);
     ~VulkanInstance();
     operator const vk::raii::Instance &() const { return m_instance; }
-	vk::Instance operator*() const { return *m_instance; }
+    vk::Instance operator*() const { return *m_instance; }
 };
 } // namespace Ghost

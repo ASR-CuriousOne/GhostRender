@@ -1,7 +1,6 @@
-#include <Ghost/windowGLFW.hpp>
+#include "windowGLFW.hpp"
 #include <iostream>
 
-namespace Ghost {
 WindowGLFW::WindowGLFW() {
     glfwInit();
 
@@ -34,4 +33,3 @@ void WindowGLFW::framebufferResizeCallback(GLFWwindow *window, int width,
     auto app = reinterpret_cast<WindowGLFW *>(glfwGetWindowUserPointer(window));
     app->m_framebufferResized = true;
 }
-} // namespace Ghost

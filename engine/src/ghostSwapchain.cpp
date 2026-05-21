@@ -8,14 +8,14 @@
 
 namespace Ghost {
 GhostSwapchain::GhostSwapchain(VulkanDevice &device,
-                               const WindowGLFW &window,
-                               const GhostSurface &surface) {
+                               const vk::SurfaceKHR &surface,
+                               const vk::Extent2D &currentExtent) {
     SwapChainSupportDetails swapChainSupport;
     swapChainSupport.querySwapChainSupport(device, surface);
 
     auto surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     auto presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-    auto extent = chooseSwapExtent(swapChainSupport.capabilities, window);
+    auto extent = chooseSwapExtent(swapChainSupport.capabilities, currentExtent);
 
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
 
@@ -31,7 +31,7 @@ GhostSwapchain::GhostSwapchain(VulkanDevice &device,
 
     auto createInfo =
         vk::SwapchainCreateInfoKHR()
-            .setSurface(*surface)
+            .setSurface(surface)
             .setMinImageCount(imageCount)
             .setImageFormat(surfaceFormat.format)
             .setImageColorSpace(surfaceFormat.colorSpace)
@@ -119,16 +119,13 @@ vk::PresentModeKHR GhostSwapchain::chooseSwapPresentMode(
 
 vk::Extent2D
 GhostSwapchain::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR &capabilities,
-                                 const WindowGLFW &window) {
+                                 const vk::Extent2D &currentExtent) {
     if (capabilities.currentExtent.width !=
         std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
     } else {
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
 
-        VkExtent2D actualExtent = {static_cast<uint32_t>(width),
-                                   static_cast<uint32_t>(height)};
+        VkExtent2D actualExtent = currentExtent;
 
         actualExtent.width =
             std::clamp(actualExtent.width, capabilities.minImageExtent.width,

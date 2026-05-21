@@ -1,15 +1,15 @@
-#include <GLFW/glfw3.h>
 #include <Ghost/ghostRenderer.hpp>
 #include <Ghost/utils.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
 namespace Ghost {
-GhostRenderer::GhostRenderer(WindowGLFW &window, VulkanDevice &device,
-                             GhostSurface &surface)
-    : m_window(window), m_device(device), m_surface(surface),
+GhostRenderer::GhostRenderer(VulkanDevice &device, vk::SurfaceKHR surface,
+                             uint32_t width, uint32_t height)
+    : m_device(device), m_extent(width, height), m_surface(surface),
       m_commandPool(device) {
+
     m_swapchain =
-        std::make_unique<GhostSwapchain>(m_device, m_window, m_surface);
+        std::make_unique<GhostSwapchain>(m_device, m_surface, m_extent);
 
     createRenderPass();
     createFramebuffers();
@@ -132,19 +132,21 @@ void GhostRenderer::createFramebuffers() {
     }
 }
 
+void GhostRenderer::flagFramebufferResized(uint32_t width, uint32_t height) {
+    m_extent.width = width;
+    m_extent.height = height;
+    m_framebufferResized = true;
+}
+
 void GhostRenderer::recreateSwapchain() {
-    int width = 0, height = 0;
-    glfwGetFramebufferSize(m_window, &width, &height);
-    while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(m_window, &width, &height);
-        glfwWaitEvents();
-    }
+    if (m_extent.width == 0 || m_extent.height == 0)
+        return;
 
     m_device->waitIdle();
     m_swapchain.reset();
 
     m_swapchain =
-        std::make_unique<GhostSwapchain>(m_device, m_window, m_surface);
+        std::make_unique<GhostSwapchain>(m_device, m_surface, m_extent);
     createFramebuffers();
 }
 
@@ -202,13 +204,12 @@ void GhostRenderer::endFrame() {
     try {
         vk::Result result = m_device.submitPresentQueue(presentInfo);
 
-        if (result == vk::Result::eSuboptimalKHR ||
-            m_window.m_framebufferResized) {
-            m_window.m_framebufferResized = false;
+        if (result == vk::Result::eSuboptimalKHR || m_framebufferResized) {
+            m_framebufferResized = false;
             recreateSwapchain();
         }
     } catch (const vk::OutOfDateKHRError &e) {
-        m_window.m_framebufferResized = false;
+        m_framebufferResized = false;
         recreateSwapchain();
     }
 
