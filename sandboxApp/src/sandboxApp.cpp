@@ -18,7 +18,7 @@ void SandboxApp::onInit() {
         m_descriptorManager->getLayout("global").getDescriptorSetLayout(),
         m_descriptorManager->getLayout("texture").getDescriptorSetLayout());
 
-    m_camera.setViewTarget({5.0f, 5.0f, 2.5f}, {0.0f, 0.0f, 0.0f});
+    m_camera.setViewTarget({10.0f, 2.0f, 2.5f}, {0.0f, 0.0f, 0.0f});
 }
 
 extern volatile sig_atomic_t g_quitRequested;
@@ -31,7 +31,7 @@ void SandboxApp::onUpdate(float dt) {
     }
 
     float aspect = m_engine->getAspectRatio();
-    m_camera.setPerspectiveProjection(glm::radians(45.0f), aspect, 0.1f,
+    m_camera.setPerspectiveProjection(glm::radians(25.0f), aspect, 0.1f,
                                       100.0f);
     m_camera.update(dt);
 
@@ -84,7 +84,8 @@ void SandboxApp::initDescriptors() {
         "global",
         Ghost::GhostDescriptorSetLayout::Builder(m_engine->getDevice())
             .addBinding(0, vk::DescriptorType::eUniformBuffer,
-                        vk::ShaderStageFlagBits::eVertex)
+                        vk::ShaderStageFlagBits::eVertex |
+                            vk::ShaderStageFlagBits::eFragment)
             .build());
 
     m_descriptorManager->registerLayout(
@@ -122,7 +123,7 @@ void SandboxApp::loadGameObjects() {
     auto gameObject1 = Ghost::GhostGameObject::createGameObject();
     gameObject1.model = model1;
     gameObject1.texture = texture1;
-    gameObject1.transform.translation = {-2.0f, 0.0f, 0.0f};
+    gameObject1.transform.translation = {0.0f, 0.0f, 0.0f};
     gameObject1.transform.scale = {1.0f, 1.0f, 1.0f};
 
     gameObject1.textureDescriptorSet = std::move(texSets[0]);
@@ -134,35 +135,44 @@ void SandboxApp::loadGameObjects() {
 
     m_gameObjects.push_back(std::move(gameObject1));
 
-    auto model2 = Ghost::GhostModel::createModelFromFile(m_engine->getDevice(),
-                                                         env["MODEL_PATH_2"]);
+    //auto model2 = Ghost::GhostModel::createModelFromFile(m_engine->getDevice(),
+    //                                                     env["MODEL_PATH_2"]);
 
-    std::string texPath2 = env.contains("TEXTURE_PATH_2")
-                               ? env["TEXTURE_PATH_2"]
-                               : "assets/textures/texture2.jpg";
-    auto texture2 =
-        std::make_shared<Ghost::GhostTexture>(m_engine->getDevice(), texPath2);
+    //std::string texPath2 = env.contains("TEXTURE_PATH_2")
+    //                           ? env["TEXTURE_PATH_2"]
+    //                           : "assets/textures/texture2.jpg";
+    //auto texture2 =
+    //    std::make_shared<Ghost::GhostTexture>(m_engine->getDevice(), texPath2);
 
-    auto gameObject2 = Ghost::GhostGameObject::createGameObject();
-    gameObject2.model = model2;
-    gameObject2.texture = texture2;
-    gameObject2.transform.translation = {2.0f, 0.0f, 0.0f};
-    gameObject2.transform.scale = {1.0f, 1.0f, 1.0f};
+    //auto gameObject2 = Ghost::GhostGameObject::createGameObject();
+    //gameObject2.model = model2;
+    //gameObject2.texture = texture2;
+    //gameObject2.transform.translation = {2.0f, 0.0f, 0.0f};
+    //gameObject2.transform.scale = {1.0f, 1.0f, 1.0f};
 
-    gameObject2.textureDescriptorSet = std::move(texSets[1]);
+    //gameObject2.textureDescriptorSet = std::move(texSets[1]);
 
-    auto imageInfo2 = texture1->descriptorInfo();
-    Ghost::GhostDescriptorWriter(m_descriptorManager->getLayout("texture"))
-        .writeImage(0, &imageInfo2)
-        .build(gameObject2.textureDescriptorSet, m_engine->getDevice());
+    //auto imageInfo2 = texture1->descriptorInfo();
+    //Ghost::GhostDescriptorWriter(m_descriptorManager->getLayout("texture"))
+    //    .writeImage(0, &imageInfo2)
+    //    .build(gameObject2.textureDescriptorSet, m_engine->getDevice());
 
-    m_gameObjects.push_back(std::move(gameObject2));
+    //m_gameObjects.push_back(std::move(gameObject2));
 }
 
 void SandboxApp::updateUniformBuffer(uint32_t currentImage) {
+    PointLight light1 = {.position = {0.0f, 100.0f, 0.0f, 100.0f},
+                         .color = {1.0f, 1.0f, 0.95f, 40.0f}};
+    PointLight light2 = {.position = {0.0f, -2.0f, 2.0f, 10.0f},
+                         .color = {0.0f, 1.0f, 1.0f, 10.0f}};
     GlobalUbo ubo{};
     ubo.projection = m_camera.getProjection();
     ubo.view = m_camera.getView();
+    ubo.cameraPos = glm::vec4(m_camera.getPosition(), 1.0f);
+	ubo.ambientLightColor = {0.1f,0.1f,0.1f,0.005f};
+    ubo.numLights = 1;
+    ubo.lights[0] = light1;
+    ubo.lights[1] = light2;
 
     m_uniformBuffers[currentImage]->writeToBuffer(
         std::span<const GlobalUbo>(&ubo, 1));

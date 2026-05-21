@@ -2,8 +2,9 @@
 #include <Ghost/utils.hpp>
 
 namespace Ghost {
-struct PushConstantData {
-    glm::mat4 model{1.f};
+struct SimplePushConstantData {
+    glm::mat4 modelMatrix{1.f};
+    glm::mat4 normalMatrix{1.f};
 };
 
 SimpleRenderSystem::SimpleRenderSystem(VulkanDevice &device,
@@ -21,9 +22,9 @@ void SimpleRenderSystem::createPipelineLayout(
     vk::DescriptorSetLayout globalSetLayout,
     vk::DescriptorSetLayout textureSetLayout) {
     vk::PushConstantRange pushConstantRange;
-    pushConstantRange.setStageFlags(vk::ShaderStageFlagBits::eVertex)
+    pushConstantRange.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
         .setOffset(0)
-        .setSize(sizeof(PushConstantData));
+        .setSize(sizeof(SimplePushConstantData));
 
     std::vector<vk::DescriptorSetLayout> setLayouts = {globalSetLayout,
                                                        textureSetLayout};
@@ -77,11 +78,15 @@ void SimpleRenderSystem::renderGameObjects(
                                                {*globalDescriptorSet}, nullptr);
 
     for (auto &obj : gameObjects) {
-        PushConstantData push{};
-        push.model = obj.transformMatrix;
+        SimplePushConstantData push{};
+        push.modelMatrix = obj.transformMatrix;
+        push.normalMatrix = glm::transpose(glm::inverse(push.modelMatrix));
 
-        frameInfo.commandBuffer.pushConstants<PushConstantData>(
-            *m_pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, push);
+        frameInfo.commandBuffer.pushConstants<SimplePushConstantData>(
+            *m_pipelineLayout,
+            vk::ShaderStageFlagBits::eVertex |
+                vk::ShaderStageFlagBits::eFragment,
+            0, push);
 
         if (obj.textureDescriptorSet) {
             frameInfo.commandBuffer.bindDescriptorSets(

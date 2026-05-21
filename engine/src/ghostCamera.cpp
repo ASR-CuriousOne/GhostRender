@@ -56,14 +56,7 @@ void GhostCamera::setViewYXZ(glm::vec3 position, glm::vec3 rotation) {
 }
 
 void GhostCamera::update(float dt) {
-    m_accumulatedTime += dt;
-
-    m_position = glm::rotate(glm::mat4(1.0f), dt * glm::radians(90.0f),
-                                      glm::vec3(0.0f, 0.0f, 1.0f)) *
-                          glm::vec4(m_position, 1.0f);
-
-    setViewTarget(m_position, glm::vec3(0.0f, 0.0f, 0.0f),
-                  glm::vec3(0.0f, 0.0f, 1.0f));
+    
 }
 
 } // namespace Ghost

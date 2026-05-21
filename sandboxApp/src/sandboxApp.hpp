@@ -8,10 +8,20 @@
 #include <memory>
 #include <vector>
 
-struct GlobalUbo {
-    glm::mat4 projection{1.f};
-    glm::mat4 view{1.f};
+struct PointLight {
+    alignas(16) glm::vec4 position; 
+    alignas(16) glm::vec4 color;   
 };
+
+struct GlobalUbo {
+    alignas(16) glm::mat4 projection;
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::vec4 ambientLightColor{1.f, 1.f, 1.f, 0.1f}; 
+    alignas(16) glm::vec4 cameraPos;
+    alignas(16) int numLights;
+    PointLight lights[50]; 
+};
+
 
 class SandboxApp : public Application {
   public:
