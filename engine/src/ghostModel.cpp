@@ -17,6 +17,10 @@ template <> struct hash<Ghost::Vertex> {
                 (seed >> 2);
         seed ^= hash<glm::vec3>()(vertex.color) + 0x9e3779b9 + (seed << 6) +
                 (seed >> 2);
+        seed ^= hash<glm::vec2>()(vertex.uv) + 0x9e3779b9 + (seed << 6) +
+                (seed >> 2);
+        seed ^= hash<glm::vec3>()(vertex.normal) + 0x9e3779b9 + (seed << 6) +
+                (seed >> 2);
         return seed;
     }
 };
@@ -35,7 +39,7 @@ Vertex::getBindingDescriptions() {
 
 std::vector<vk::VertexInputAttributeDescription>
 Vertex::getAttributeDescriptions() {
-    std::vector<vk::VertexInputAttributeDescription> attributeDescriptions(3);
+    std::vector<vk::VertexInputAttributeDescription> attributeDescriptions(4);
     attributeDescriptions[0]
         .setBinding(0)
         .setLocation(0)
@@ -51,6 +55,12 @@ Vertex::getAttributeDescriptions() {
         .setLocation(2)
         .setFormat(vk::Format::eR32G32Sfloat)
         .setOffset(offsetof(Vertex, uv));
+    attributeDescriptions[3]
+        .setBinding(0)
+        .setLocation(3)
+        .setFormat(vk::Format::eR32G32B32Sfloat)
+        .setOffset(offsetof(Vertex, normal));
+
     return attributeDescriptions;
 }
 
@@ -147,6 +157,10 @@ void GhostModel::Builder::loadModel(const std::string &filepath) {
                     attrib.texcoords[2 * index.texcoord_index + 0],
                     1.0f - attrib.texcoords[2 * index.texcoord_index + 1]};
             }
+
+            vertex.normal = {attrib.normals[3 * index.normal_index + 0],
+                             attrib.normals[3 * index.normal_index + 1],
+                             attrib.normals[3 * index.normal_index + 2]};
 
             if (uniqueVertices.count(vertex) == 0) {
                 uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());

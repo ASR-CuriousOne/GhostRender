@@ -8,6 +8,7 @@ struct Vertex {
     glm::vec3 position;
     glm::vec3 color;
     glm::vec2 uv;
+	glm::vec3 normal;
 
     static std::vector<vk::VertexInputBindingDescription>
     getBindingDescriptions();
@@ -16,7 +17,7 @@ struct Vertex {
 
     bool operator==(const Vertex &other) const {
         return position == other.position && color == other.color &&
-               uv == other.uv;
+               uv == other.uv && normal == other.normal;
     }
 };
 
