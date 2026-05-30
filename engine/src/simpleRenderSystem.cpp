@@ -22,7 +22,9 @@ void SimpleRenderSystem::createPipelineLayout(
     vk::DescriptorSetLayout globalSetLayout,
     vk::DescriptorSetLayout textureSetLayout) {
     vk::PushConstantRange pushConstantRange;
-    pushConstantRange.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+    pushConstantRange
+        .setStageFlags(vk::ShaderStageFlagBits::eVertex |
+                       vk::ShaderStageFlagBits::eFragment)
         .setOffset(0)
         .setSize(sizeof(SimplePushConstantData));
 
@@ -66,8 +68,8 @@ void SimpleRenderSystem::createPipeline(vk::RenderPass renderPass) {
         m_device, vertShaderPath, fragShaderPath, pipelineConfigInfo);
 }
 
-void SimpleRenderSystem::renderGameObjects(
-    const FrameInfo &frameInfo, std::vector<GhostRenderObject> &gameObjects,
+void SimpleRenderSystem::render(
+    const FrameInfo &frameInfo, std::vector<GhostRenderObject> &renderObjects,
     const vk::raii::DescriptorSet &globalDescriptorSet) {
 
     frameInfo.commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
@@ -77,7 +79,7 @@ void SimpleRenderSystem::renderGameObjects(
                                                *m_pipelineLayout, 0,
                                                {*globalDescriptorSet}, nullptr);
 
-    for (auto &obj : gameObjects) {
+    for (auto &obj : renderObjects) {
         SimplePushConstantData push{};
         push.modelMatrix = obj.transformMatrix;
         push.normalMatrix = glm::transpose(glm::inverse(push.modelMatrix));

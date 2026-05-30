@@ -13,10 +13,10 @@ void SandboxApp::onInit() {
 
     loadGameObjects();
 
-    m_simpleRenderSystem = std::make_unique<Ghost::SimpleRenderSystem>(
+    addRenderSystem(std::make_unique<Ghost::SimpleRenderSystem>(
         m_engine->getDevice(), m_engine->getRenderPass(),
         m_descriptorManager->getLayout("global").getDescriptorSetLayout(),
-        m_descriptorManager->getLayout("texture").getDescriptorSetLayout());
+        m_descriptorManager->getLayout("texture").getDescriptorSetLayout()));
 
     m_camera.setViewTarget({10.0f, 2.0f, 2.5f}, {0.0f, 0.0f, 0.0f});
 }
@@ -62,8 +62,10 @@ void SandboxApp::onRender(const Ghost::FrameInfo &frameInfo) {
         }
     }
 
-    m_simpleRenderSystem->renderGameObjects(
-        frameInfo, renderObjects, m_descriptorSets[frameInfo.frameIndex]);
+    for (auto &renderSystem : m_renderSystems) {
+        renderSystem->render(frameInfo, renderObjects,
+                             m_descriptorSets[frameInfo.frameIndex]);
+    }
 }
 
 void SandboxApp::onShutdown() {
@@ -135,29 +137,31 @@ void SandboxApp::loadGameObjects() {
 
     m_gameObjects.push_back(std::move(gameObject1));
 
-    //auto model2 = Ghost::GhostModel::createModelFromFile(m_engine->getDevice(),
-    //                                                     env["MODEL_PATH_2"]);
+    // auto model2 =
+    // Ghost::GhostModel::createModelFromFile(m_engine->getDevice(),
+    //                                                      env["MODEL_PATH_2"]);
 
-    //std::string texPath2 = env.contains("TEXTURE_PATH_2")
-    //                           ? env["TEXTURE_PATH_2"]
-    //                           : "assets/textures/texture2.jpg";
-    //auto texture2 =
-    //    std::make_shared<Ghost::GhostTexture>(m_engine->getDevice(), texPath2);
+    // std::string texPath2 = env.contains("TEXTURE_PATH_2")
+    //                            ? env["TEXTURE_PATH_2"]
+    //                            : "assets/textures/texture2.jpg";
+    // auto texture2 =
+    //     std::make_shared<Ghost::GhostTexture>(m_engine->getDevice(),
+    //     texPath2);
 
-    //auto gameObject2 = Ghost::GhostGameObject::createGameObject();
-    //gameObject2.model = model2;
-    //gameObject2.texture = texture2;
-    //gameObject2.transform.translation = {2.0f, 0.0f, 0.0f};
-    //gameObject2.transform.scale = {1.0f, 1.0f, 1.0f};
+    // auto gameObject2 = Ghost::GhostGameObject::createGameObject();
+    // gameObject2.model = model2;
+    // gameObject2.texture = texture2;
+    // gameObject2.transform.translation = {2.0f, 0.0f, 0.0f};
+    // gameObject2.transform.scale = {1.0f, 1.0f, 1.0f};
 
-    //gameObject2.textureDescriptorSet = std::move(texSets[1]);
+    // gameObject2.textureDescriptorSet = std::move(texSets[1]);
 
-    //auto imageInfo2 = texture1->descriptorInfo();
-    //Ghost::GhostDescriptorWriter(m_descriptorManager->getLayout("texture"))
-    //    .writeImage(0, &imageInfo2)
-    //    .build(gameObject2.textureDescriptorSet, m_engine->getDevice());
+    // auto imageInfo2 = texture1->descriptorInfo();
+    // Ghost::GhostDescriptorWriter(m_descriptorManager->getLayout("texture"))
+    //     .writeImage(0, &imageInfo2)
+    //     .build(gameObject2.textureDescriptorSet, m_engine->getDevice());
 
-    //m_gameObjects.push_back(std::move(gameObject2));
+    // m_gameObjects.push_back(std::move(gameObject2));
 }
 
 void SandboxApp::updateUniformBuffer(uint32_t currentImage) {
@@ -169,7 +173,7 @@ void SandboxApp::updateUniformBuffer(uint32_t currentImage) {
     ubo.projection = m_camera.getProjection();
     ubo.view = m_camera.getView();
     ubo.cameraPos = glm::vec4(m_camera.getPosition(), 1.0f);
-	ubo.ambientLightColor = {0.1f,0.1f,0.1f,0.005f};
+    ubo.ambientLightColor = {0.1f, 0.1f, 0.1f, 0.005f};
     ubo.numLights = 1;
     ubo.lights[0] = light1;
     ubo.lights[1] = light2;

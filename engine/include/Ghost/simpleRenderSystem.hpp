@@ -1,20 +1,21 @@
 #pragma once
+#include <Ghost/IRenderSystem.hpp>
 #include <Ghost/frameInfo.hpp>
 #include <Ghost/ghostGraphicsPipeline.hpp>
 #include <Ghost/ghostRenderObject.hpp>
 #include <Ghost/vulkanDevice.hpp>
 
 namespace Ghost {
-class SimpleRenderSystem {
+class SimpleRenderSystem : public IRenderSystem {
   public:
     SimpleRenderSystem(VulkanDevice &device, vk::RenderPass renderPass,
                        vk::DescriptorSetLayout globalSetLayout,
                        vk::DescriptorSetLayout textureSetLayout);
     ~SimpleRenderSystem();
 
-    void renderGameObjects(const FrameInfo &frameInfo,
-                           std::vector<GhostRenderObject> &gameObjects,
-                           const vk::raii::DescriptorSet &globalDescriptorSet);
+    void render(const FrameInfo &frameInfo,
+                std::vector<GhostRenderObject> &renderObjects,
+                const vk::raii::DescriptorSet &globalDescriptorSet) override;
 
   private:
     void createPipelineLayout(vk::DescriptorSetLayout globalSetLayout,

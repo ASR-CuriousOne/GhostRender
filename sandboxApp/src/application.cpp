@@ -75,9 +75,14 @@ void Application::run() {
             m_engine->endFrame();
         }
     }
-	m_engine->getDevice()->waitIdle();
+    m_engine->getDevice()->waitIdle();
     onShutdown();
     std::clog << "Application Loop: Stopped." << std::endl;
 };
+
+void Application::addRenderSystem(
+    std::unique_ptr<Ghost::IRenderSystem> system) {
+    m_renderSystems.push_back(std::move(system));
+}
 
 void Application::close() { m_isRunning = false; }
