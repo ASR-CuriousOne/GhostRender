@@ -19,4 +19,6 @@ cmake --build $BUILD_DIR
 echo Compiling Shaders....
 glslc shaders/vert.vert -o shaders/vert.spv
 glslc shaders/frag.frag -o shaders/frag.spv
+glslc shaders/skybox.vert -o shaders/skyboxVert.spv
+glslc shaders/skybox.frag -o shaders/skyboxFrag.spv
 echo Shaders Compiled.

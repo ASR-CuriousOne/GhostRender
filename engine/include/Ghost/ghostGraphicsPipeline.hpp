@@ -1,7 +1,6 @@
 #pragma once
 #include <Ghost/pipelineConfig.hpp>
 #include <Ghost/vulkanDevice.hpp>
-#include <filesystem>
 
 namespace Ghost {
 
@@ -15,12 +14,12 @@ class GhostGraphicsPipeline {
 
   public:
     GhostGraphicsPipeline(const VulkanDevice &device,
-                          const std::filesystem::path &vertFilepath,
-                          const std::filesystem::path &fragFilepath,
+                          const std::vector<std::byte> &vertFilepath,
+                          const std::vector<std::byte> &fragFilepath,
                           const PipelineConfigInfo &configInfo);
     ~GhostGraphicsPipeline();
 
-	vk::Pipeline operator*() const {return *m_graphicsPipeline;}
+    vk::Pipeline operator*() const { return *m_graphicsPipeline; }
 };
 
 } // namespace Ghost

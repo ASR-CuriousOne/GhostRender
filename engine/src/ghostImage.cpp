@@ -5,9 +5,11 @@ GhostImage::GhostImage(VulkanDevice &device, uint32_t width, uint32_t height,
                        vk::Format format, vk::ImageTiling tiling,
                        vk::ImageUsageFlags usage,
                        vk::MemoryPropertyFlags properties,
-                       vk::ImageAspectFlags aspectFlags)
-    : m_device(device), m_format(format), m_aspectFlags(aspectFlags) {
-	m_extent.setWidth(width).setHeight(height).setDepth(1);
+                       vk::ImageAspectFlags aspectFlags, uint32_t mipLevels,
+                       uint32_t arrayLayers, bool isCubeMap)
+    : m_device(device), m_format(format), m_aspectFlags(aspectFlags),
+      m_mipLevels(mipLevels), m_arrayLayers(arrayLayers) {
+    m_extent.setWidth(width).setHeight(height).setDepth(1);
 
     vk::ImageCreateInfo imageInfo{};
     imageInfo.setImageType(vk::ImageType::e2D)
@@ -20,6 +22,9 @@ GhostImage::GhostImage(VulkanDevice &device, uint32_t width, uint32_t height,
         .setUsage(usage)
         .setSamples(vk::SampleCountFlagBits::e1)
         .setSharingMode(vk::SharingMode::eExclusive);
+    if (isCubeMap) {
+        imageInfo.setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
+    }
 
     m_image = vk::raii::Image(m_device.get(), imageInfo);
 
@@ -34,9 +39,15 @@ GhostImage::GhostImage(VulkanDevice &device, uint32_t width, uint32_t height,
     m_image.bindMemory(m_memory, 0);
 
     vk::ImageViewCreateInfo viewInfo{};
-    viewInfo.setImage(*m_image)
-        .setViewType(vk::ImageViewType::e2D)
-        .setFormat(m_format);
+    viewInfo.setImage(*m_image).setFormat(m_format);
+
+    if (isCubeMap && m_arrayLayers == 6) {
+        viewInfo.setViewType(vk::ImageViewType::eCube);
+    } else if (m_arrayLayers > 1) {
+        viewInfo.setViewType(vk::ImageViewType::e2DArray);
+    } else {
+        viewInfo.setViewType(vk::ImageViewType::e2D);
+    }
 
     viewInfo.subresourceRange.setAspectMask(m_aspectFlags)
         .setBaseMipLevel(0)
@@ -48,7 +59,7 @@ GhostImage::GhostImage(VulkanDevice &device, uint32_t width, uint32_t height,
 }
 
 void GhostImage::transitionImageLayout(vk::raii::CommandBuffer &cmd,
-                                      vk::ImageLayout newLayout) {
+                                       vk::ImageLayout newLayout) {
     vk::ImageMemoryBarrier barrier{};
     barrier.oldLayout = m_imageLayout;
     barrier.newLayout = newLayout;

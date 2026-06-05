@@ -9,9 +9,18 @@ SandboxApp::SandboxApp() {}
 void SandboxApp::onInit() {
     std::cout << "SandboxApp: Initializing..." << std::endl;
 
-    initDescriptors();
+    vk::raii::DescriptorSet hdriDescriptorSet = initDescriptors();
 
     loadGameObjects();
+
+    auto hdriSystem = std::make_unique<Ghost::HDRIRenderSystem>(
+        m_engine->getDevice(), m_engine->getRenderPass(),
+        m_descriptorManager->getLayout("global").getDescriptorSetLayout(),
+        m_descriptorManager->getLayout("hdriSetLayout")
+            .getDescriptorSetLayout());
+
+    hdriSystem->setHdriDescriptorSet(std::move(hdriDescriptorSet));
+    addRenderSystem(std::move(hdriSystem));
 
     addRenderSystem(std::make_unique<Ghost::SimpleRenderSystem>(
         m_engine->getDevice(), m_engine->getRenderPass(),
@@ -72,7 +81,7 @@ void SandboxApp::onShutdown() {
     std::cout << "SandboxApp: Shutting down..." << std::endl;
 }
 
-void SandboxApp::initDescriptors() {
+vk::raii::DescriptorSet SandboxApp::initDescriptors() {
     for (int i = 0; i < Ghost::MAX_FRAMES_IN_FLIGHT; i++) {
         m_uniformBuffers.push_back(std::make_unique<Ghost::GhostBuffer>(
             m_engine->getDevice(), sizeof(GlobalUbo),
@@ -97,6 +106,25 @@ void SandboxApp::initDescriptors() {
                         vk::ShaderStageFlagBits::eFragment)
             .build());
 
+    m_hdriTexture = std::make_unique<Ghost::HDRITexture>(
+        m_engine->getDevice(), "assets/textures/environment.hdr");
+
+    auto hdriLayout =
+        Ghost::GhostDescriptorSetLayout::Builder(m_engine->getDevice())
+            .addBinding(0, vk::DescriptorType::eCombinedImageSampler,
+                        vk::ShaderStageFlagBits::eFragment)
+            .build();
+
+    m_descriptorManager->registerLayout("hdriSetLayout", std::move(hdriLayout));
+    auto hdriSets = m_descriptorManager->allocateSets("hdriSetLayout", 1);
+    vk::raii::DescriptorSet hdriDescriptorSet = std::move(hdriSets[0]);
+
+    vk::DescriptorImageInfo imageInfo = m_hdriTexture->descriptorInfo();
+    Ghost::GhostDescriptorWriter writer(
+        m_descriptorManager->getLayout("hdriSetLayout"));
+    writer.writeImage(0, &imageInfo);
+    writer.build(hdriDescriptorSet, m_engine->getDevice());
+
     m_descriptorSets = m_descriptorManager->allocateSets(
         "global", Ghost::MAX_FRAMES_IN_FLIGHT);
 
@@ -106,6 +134,8 @@ void SandboxApp::initDescriptors() {
             .writeBuffer(0, &bufferInfo)
             .build(m_descriptorSets[i], m_engine->getDevice());
     }
+
+    return hdriDescriptorSet;
 }
 
 void SandboxApp::loadGameObjects() {

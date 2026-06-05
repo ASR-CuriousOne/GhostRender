@@ -51,6 +51,11 @@ void SimpleRenderSystem::createPipeline(vk::RenderPass renderPass) {
                               ? envVars["FRAG_SHADER_PATH"]
                               : "./shaders/frag.spv";
 
+    const std::vector<std::byte> vertShaderCode =
+        Utils::readFile(vertShaderPath);
+    const std::vector<std::byte> fragShaderCode =
+        Utils::readFile(fragShaderPath);
+
     PipelineConfigInfo pipelineConfigInfo;
     PipelineConfigInfo::defaultConfig(pipelineConfigInfo);
     pipelineConfigInfo.renderPass = renderPass;
@@ -65,7 +70,7 @@ void SimpleRenderSystem::createPipeline(vk::RenderPass renderPass) {
             pipelineConfigInfo.attributeDescriptions);
 
     m_graphicsPipeline = std::make_unique<GhostGraphicsPipeline>(
-        m_device, vertShaderPath, fragShaderPath, pipelineConfigInfo);
+        m_device, vertShaderCode, fragShaderCode, pipelineConfigInfo);
 }
 
 void SimpleRenderSystem::render(

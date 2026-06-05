@@ -1,6 +1,8 @@
-#include <Ghost/ghostCamera.hpp>
+#include "ghostCamera.hpp"
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
 
 namespace Ghost {
 void GhostCamera::setOrthographicProjection(float left, float right, float top,
@@ -56,7 +58,14 @@ void GhostCamera::setViewYXZ(glm::vec3 position, glm::vec3 rotation) {
 }
 
 void GhostCamera::update(float dt) {
-    
+    const float rotationSpeed = -0.5f;
+
+    glm::quat deltaRotation = glm::angleAxis(rotationSpeed * dt, glm::vec3(0.0f, 0.0f, 1.0f));
+
+    m_position = deltaRotation * m_position;
+
+    setViewTarget(m_position, glm::vec3(0.0f, 0.0f, 0.0f),
+                  glm::vec3(0.0f, 0.0f, 1.0f));
 }
 
 } // namespace Ghost

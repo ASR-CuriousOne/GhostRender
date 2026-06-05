@@ -1,4 +1,4 @@
-#include <Ghost/ghostGameObject.hpp>
+#include "ghostGameObject.hpp"
 
 namespace Ghost {
 void GhostGameObject::update(float deltaTime) {

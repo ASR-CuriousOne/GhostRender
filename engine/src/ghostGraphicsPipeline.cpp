@@ -4,13 +4,10 @@
 
 namespace Ghost {
 GhostGraphicsPipeline::GhostGraphicsPipeline(
-    const VulkanDevice &device, const std::filesystem::path &vertFilepath,
-    const std::filesystem::path &fragFilepath,
+    const VulkanDevice &device, const std::vector<std::byte> &vertShaderCode,
+    const std::vector<std::byte> &fragShaderCode,
     const PipelineConfigInfo &configInfo)
     : m_device(device) {
-
-    const std::vector<std::byte> vertShaderCode = Utils::readFile(vertFilepath);
-    const std::vector<std::byte> fragShaderCode = Utils::readFile(fragFilepath);
 
     vk::ShaderModuleCreateInfo vertCreateInfo(
         {}, vertShaderCode.size(),
@@ -45,5 +42,5 @@ GhostGraphicsPipeline::GhostGraphicsPipeline(
     m_graphicsPipeline = vk::raii::Pipeline(m_device, nullptr, createInfo);
 }
 
-GhostGraphicsPipeline::~GhostGraphicsPipeline(){}
+GhostGraphicsPipeline::~GhostGraphicsPipeline() {}
 } // namespace Ghost

@@ -9,7 +9,8 @@ class GhostImage {
     GhostImage(VulkanDevice &device, uint32_t width, uint32_t height,
                vk::Format format, vk::ImageTiling tiling,
                vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties,
-               vk::ImageAspectFlags aspectFlags);
+               vk::ImageAspectFlags aspectFlags, uint32_t mipLevels = 1,
+               uint32_t arrayLayers = 1, bool isCubeMap = false);
     ~GhostImage() = default;
 
     GhostImage(const GhostImage &) = delete;
@@ -28,7 +29,8 @@ class GhostImage {
     uint32_t getArrayLayers() const { return m_arrayLayers; }
     vk::ImageAspectFlags getAspect() const { return m_aspectFlags; }
 
-    void transitionImageLayout(vk::raii::CommandBuffer& cmd, vk::ImageLayout newLayout);
+    void transitionImageLayout(vk::raii::CommandBuffer &cmd,
+                               vk::ImageLayout newLayout);
 
   private:
     std::reference_wrapper<VulkanDevice> m_device;
@@ -40,8 +42,8 @@ class GhostImage {
     vk::Extent3D m_extent;
     vk::Format m_format;
 
+    vk::ImageAspectFlags m_aspectFlags;
     uint32_t m_mipLevels = 1;
     uint32_t m_arrayLayers = 1;
-    vk::ImageAspectFlags m_aspectFlags;
 };
 } // namespace Ghost
