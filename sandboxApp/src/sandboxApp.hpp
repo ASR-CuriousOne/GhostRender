@@ -3,10 +3,10 @@
 #include "application.hpp"
 #include "ghostCamera.hpp"
 #include "ghostGameObject.hpp"
-#include <Ghost/ghostBuffer.hpp>
-#include <Ghost/hdriRenderSystem.hpp>
-#include <Ghost/hdriTexture.hpp>
-#include <Ghost/simpleRenderSystem.hpp>
+#include <Ghost/Core/ghostBuffer.hpp>
+#include <Ghost/Resources/hdriTexture.hpp>
+#include <Ghost/Systems/hdriRenderSystem.hpp>
+#include <Ghost/Systems/simpleRenderSystem.hpp>
 #include <memory>
 #include <vector>
 

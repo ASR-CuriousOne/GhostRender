@@ -1,6 +1,6 @@
 #include "sandboxApp.hpp"
-#include <Ghost/ghostDescriptors.hpp>
-#include <Ghost/utils.hpp>
+#include <Ghost/Resources/ghostDescriptors.hpp>
+#include <Ghost/Utils/utils.hpp>
 #include <csignal>
 #include <iostream>
 

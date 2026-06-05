@@ -1,5 +1,4 @@
 #include "application.hpp"
-#include <Ghost/simpleRenderSystem.hpp>
 #include <chrono>
 #include <memory>
 

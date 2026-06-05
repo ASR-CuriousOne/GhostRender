@@ -1,9 +1,9 @@
 #pragma once
 #include "windowGLFW.hpp"
-#include <Ghost/IRenderSystem.hpp>
-#include <Ghost/frameInfo.hpp>
-#include <Ghost/ghostDescriptorManager.hpp>
-#include <Ghost/ghostRender.hpp>
+#include <Ghost/Core/ghostRender.hpp>
+#include <Ghost/Resources/ghostDescriptorManager.hpp>
+#include <Ghost/Systems/IRenderSystem.hpp>
+#include <Ghost/Utils/frameInfo.hpp>
 #include <memory>
 
 class Application {

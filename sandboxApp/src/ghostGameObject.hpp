@@ -1,7 +1,7 @@
 #pragma once
-#include <Ghost/ghostTexture.hpp>
+#include <Ghost/Resources/ghostTexture.hpp>
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <Ghost/ghostModel.hpp>
+#include <Ghost/Resources/ghostModel.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #define GLM_ENABLE_EXPERIMENTAL

@@ -3,7 +3,12 @@ cmake_minimum_required(VERSION 3.20)
 find_package(Vulkan REQUIRED)
 
 
-file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS "*.cpp")
+file(GLOB_RECURSE ENGINE_SOURCES 
+    "src/Core/*.cpp"
+    "src/Resources/*.cpp"
+    "src/Systems/*.cpp"
+    "src/Utils/*.cpp"
+)
 
 add_library(GhostRenderEngine STATIC ${ENGINE_SOURCES})
 
