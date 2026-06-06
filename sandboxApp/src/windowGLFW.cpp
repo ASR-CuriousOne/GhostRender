@@ -20,6 +20,7 @@ WindowGLFW::WindowGLFW() {
 
     glfwSetWindowUserPointer(m_window, this);
     glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
+	glfwSetScrollCallback(m_window, scrollCallback);
 }
 
 WindowGLFW::~WindowGLFW() {
@@ -28,8 +29,20 @@ WindowGLFW::~WindowGLFW() {
     glfwTerminate();
 }
 
+float WindowGLFW::consumeScrollOffset() {
+    float offset = m_scrollOffset;
+    m_scrollOffset = 0.0f; 
+
+    return offset;
+}
+
 void WindowGLFW::framebufferResizeCallback(GLFWwindow *window, int width,
                                            int height) {
     auto app = reinterpret_cast<WindowGLFW *>(glfwGetWindowUserPointer(window));
     app->m_framebufferResized = true;
+}
+
+void WindowGLFW::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+    auto app = reinterpret_cast<WindowGLFW *>(glfwGetWindowUserPointer(window));
+    app->m_scrollOffset += static_cast<float>(yoffset); 
 }

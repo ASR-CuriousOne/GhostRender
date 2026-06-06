@@ -47,7 +47,7 @@ void main() {
         float blinnTerm = dot(surfaceNormal, halfAngle);
         blinnTerm = clamp(blinnTerm, 0.0, 1.0);
         blinnTerm = pow(blinnTerm, 32.0); 
-        vec3 specular = light.color.xyz * light.color.w * blinnTerm;
+        vec3 specular = light.color.xyz * light.color.w * blinnTerm * 0.0f;
 
         finalLighting += (diffuse + specular) * attenuation;
     }

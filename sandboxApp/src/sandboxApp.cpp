@@ -27,7 +27,8 @@ void SandboxApp::onInit() {
         m_descriptorManager->getLayout("global").getDescriptorSetLayout(),
         m_descriptorManager->getLayout("texture").getDescriptorSetLayout()));
 
-    m_camera.setViewTarget({10.0f, 2.0f, 2.5f}, {0.0f, 0.0f, 0.0f});
+    m_cameraController = std::make_unique<CameraController>(m_camera, m_window);
+    m_cameraController->setMode(CameraController::Mode::FreeRoam);
 }
 
 extern volatile sig_atomic_t g_quitRequested;
@@ -40,9 +41,33 @@ void SandboxApp::onUpdate(float dt) {
     }
 
     float aspect = m_engine->getAspectRatio();
-    m_camera.setPerspectiveProjection(glm::radians(25.0f), aspect, 0.1f,
-                                      100.0f);
-    m_camera.update(dt);
+    float fov = glm::radians(60.0f);
+    float nearPlane = 1.0f;
+    float farPlane = 100000.0f;
+
+    m_camera.setPerspectiveProjection(fov, aspect, nearPlane, farPlane);
+
+    static bool oKeyPressed = false;
+    GLFWwindow *window = m_window.getWindow();
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+        if (!oKeyPressed) {
+            if (m_cameraController->getMode() ==
+                CameraController::Mode::FreeRoam) {
+                m_cameraController->setMode(CameraController::Mode::Orbit);
+                if (!m_gameObjects.empty()) {
+                    m_cameraController->setTarget(
+                        m_gameObjects[0].transform.translation);
+                }
+            } else {
+                m_cameraController->setMode(CameraController::Mode::FreeRoam);
+            }
+            oKeyPressed = true;
+        }
+    } else {
+        oKeyPressed = false;
+    }
+
+    m_cameraController->update(dt);
 
     for (auto &obj : m_gameObjects) {
         obj.update(dt);
@@ -156,7 +181,7 @@ void SandboxApp::loadGameObjects() {
     gameObject1.model = model1;
     gameObject1.texture = texture1;
     gameObject1.transform.translation = {0.0f, 0.0f, 0.0f};
-    gameObject1.transform.scale = {1.0f, 1.0f, 1.0f};
+    gameObject1.transform.scale = {100.0f, 100.0f, 100.0f};
 
     gameObject1.textureDescriptorSet = std::move(texSets[0]);
 
@@ -195,8 +220,8 @@ void SandboxApp::loadGameObjects() {
 }
 
 void SandboxApp::updateUniformBuffer(uint32_t currentImage) {
-    PointLight light1 = {.position = {0.0f, 100.0f, 0.0f, 100.0f},
-                         .color = {1.0f, 1.0f, 0.95f, 40.0f}};
+    PointLight light1 = {.position = {0.0f, 1000.0f, 0.0f, 100.0f},
+                         .color = {1.0f, 1.0f, 0.95f, 1600.0f}};
     PointLight light2 = {.position = {0.0f, -2.0f, 2.0f, 10.0f},
                          .color = {0.0f, 1.0f, 1.0f, 10.0f}};
     GlobalUbo ubo{};

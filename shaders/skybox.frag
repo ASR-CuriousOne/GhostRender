@@ -25,8 +25,5 @@ void main() {
     
     envColor = envColor / (envColor + vec3(1.0));
     
-    const float gamma = 2.2;
-    envColor = pow(envColor, vec3(1.0 / gamma));
-    
     outColor = vec4(envColor, 1.0);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "application.hpp"
+#include "cameraController.hpp"
 #include "ghostCamera.hpp"
 #include "ghostGameObject.hpp"
 #include <Ghost/Core/ghostBuffer.hpp>
@@ -43,7 +44,9 @@ class SandboxApp : public Application {
     std::unique_ptr<Ghost::HDRITexture> m_hdriTexture;
 
     std::vector<Ghost::GhostGameObject> m_gameObjects;
+
     Ghost::GhostCamera m_camera;
+    std::unique_ptr<CameraController> m_cameraController;
 
     std::vector<std::unique_ptr<Ghost::GhostBuffer>> m_uniformBuffers;
     std::vector<vk::raii::DescriptorSet> m_descriptorSets;
