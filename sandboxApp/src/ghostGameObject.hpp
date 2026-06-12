@@ -1,7 +1,8 @@
 #pragma once
 #include <Ghost/Resources/ghostTexture.hpp>
+#include <Ghost/Resources/material.hpp>
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <Ghost/Resources/ghostModel.hpp>
+#include <Ghost/Resources/mesh.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -38,18 +39,17 @@ class GhostGameObject {
 
     id_t getId() const { return m_id; }
 
-    std::shared_ptr<GhostModel> model{};
-    std::shared_ptr<GhostTexture> texture{};
-    vk::raii::DescriptorSet textureDescriptorSet = nullptr;
+    std::shared_ptr<Mesh> mesh{};
+    std::shared_ptr<Material> material{};
     TransformComponent transform{};
 
-	void update(float deltaTime);
+    void update(float deltaTime);
 
   private:
     GhostGameObject(id_t objId) : m_id{objId} {}
     id_t m_id;
 
-	float m_accumulatedTime = 0.0f;
+    float m_accumulatedTime = 0.0f;
 };
 
 } // namespace Ghost

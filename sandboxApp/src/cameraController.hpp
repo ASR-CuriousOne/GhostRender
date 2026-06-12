@@ -34,7 +34,7 @@ class CameraController {
     glm::vec3 m_target{0.f, 0.f, 0.f};
     float m_yaw = 0.f;
     float m_pitch = 0.f;
-    float m_radius = 200.f;
+    float m_radius = 20.f;
 
     double m_lastMouseX = 0.0;
     double m_lastMouseY = 0.0;

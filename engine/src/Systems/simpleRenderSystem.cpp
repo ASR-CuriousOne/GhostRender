@@ -61,9 +61,10 @@ void SimpleRenderSystem::createPipeline(vk::RenderPass renderPass) {
     pipelineConfigInfo.renderPass = renderPass;
     pipelineConfigInfo.pipelineLayout = m_pipelineLayout;
 
-    pipelineConfigInfo.bindingDescriptions = Vertex::getBindingDescriptions();
+    pipelineConfigInfo.bindingDescriptions =
+        StandardVertex::getBindingDescriptions();
     pipelineConfigInfo.attributeDescriptions =
-        Vertex::getAttributeDescriptions();
+        StandardVertex::getAttributeDescriptions();
     pipelineConfigInfo.vertexInputInfo
         .setVertexBindingDescriptions(pipelineConfigInfo.bindingDescriptions)
         .setVertexAttributeDescriptions(
@@ -83,27 +84,6 @@ void SimpleRenderSystem::render(
     frameInfo.commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                                                *m_pipelineLayout, 0,
                                                {*globalDescriptorSet}, nullptr);
-
-    for (auto &obj : renderObjects) {
-        SimplePushConstantData push{};
-        push.modelMatrix = obj.transformMatrix;
-        push.normalMatrix = glm::transpose(glm::inverse(push.modelMatrix));
-
-        frameInfo.commandBuffer.pushConstants<SimplePushConstantData>(
-            *m_pipelineLayout,
-            vk::ShaderStageFlagBits::eVertex |
-                vk::ShaderStageFlagBits::eFragment,
-            0, push);
-
-        if (obj.textureDescriptorSet) {
-            frameInfo.commandBuffer.bindDescriptorSets(
-                vk::PipelineBindPoint::eGraphics, *m_pipelineLayout, 1,
-                {obj.textureDescriptorSet}, nullptr);
-        }
-
-        obj.model->bind(frameInfo.commandBuffer);
-        obj.model->draw(frameInfo.commandBuffer);
-    }
 }
 
 } // namespace Ghost

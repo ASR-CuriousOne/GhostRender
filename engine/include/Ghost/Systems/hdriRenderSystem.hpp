@@ -1,6 +1,7 @@
 #pragma once
 #include <Ghost/Systems/IRenderSystem.hpp>
 #include <Ghost/Core/ghostGraphicsPipeline.hpp>
+#include <Ghost/Resources/mesh.hpp>
 
 namespace Ghost {
 class HDRIRenderSystem : public IRenderSystem {
@@ -29,6 +30,6 @@ class HDRIRenderSystem : public IRenderSystem {
     std::unique_ptr<GhostGraphicsPipeline> m_graphicsPipeline;
     vk::raii::DescriptorSet m_hdriDescriptorSet = nullptr;
 
-	std::unique_ptr<GhostModel> m_cubeModel;
+	std::unique_ptr<Mesh> m_cubeModel;
 };
 } // namespace Ghost

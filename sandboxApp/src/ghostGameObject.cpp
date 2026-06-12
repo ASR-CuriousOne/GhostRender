@@ -3,7 +3,7 @@
 namespace Ghost {
 void GhostGameObject::update(float deltaTime) {
 	m_accumulatedTime += deltaTime;
-	const float rotationSpeed = 0.5f;
+	const float rotationSpeed = 0.09f;
 	glm::quat deltaRotation = glm::angleAxis(rotationSpeed * deltaTime, glm::vec3(0.0f, 0.0f, 1.0f));
 
 	transform.rotation = transform.rotation * deltaRotation;

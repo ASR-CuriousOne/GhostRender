@@ -9,7 +9,7 @@ Application::Application() : m_window() {
     std::vector<const char *> extensions(glfwExtensions,
                                          glfwExtensions + glfwExtensionCount);
 
-    Ghost::GhostRenderConfig config{};
+    Ghost::ForwardRendererConfig config{};
     config.instanceExtensions = extensions;
     config.windowWidth = m_window.WIDTH;
     config.windowHeight = m_window.HEIGHT;
@@ -23,7 +23,7 @@ Application::Application() : m_window() {
         return surface;
     };
 
-    m_engine = std::make_unique<Ghost::GhostRender>(config);
+    m_engine = std::make_unique<Ghost::ForwardRenderer>(config);
 
     m_descriptorManager =
         std::make_unique<Ghost::GhostDescriptorManager>(m_engine->getDevice());
@@ -78,10 +78,5 @@ void Application::run() {
     onShutdown();
     std::clog << "Application Loop: Stopped." << std::endl;
 };
-
-void Application::addRenderSystem(
-    std::unique_ptr<Ghost::IRenderSystem> system) {
-    m_renderSystems.push_back(std::move(system));
-}
 
 void Application::close() { m_isRunning = false; }

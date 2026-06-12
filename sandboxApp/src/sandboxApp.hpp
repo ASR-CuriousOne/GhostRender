@@ -4,10 +4,12 @@
 #include "cameraController.hpp"
 #include "ghostCamera.hpp"
 #include "ghostGameObject.hpp"
-#include <Ghost/Core/ghostBuffer.hpp>
-#include <Ghost/Resources/hdriTexture.hpp>
-#include <Ghost/Systems/hdriRenderSystem.hpp>
-#include <Ghost/Systems/simpleRenderSystem.hpp>
+
+#include <Ghost/Core/ghostGraphicsPipeline.hpp>
+#include <Ghost/Resources/assetManager.hpp>
+#include <Ghost/Resources/pbrMaterial.hpp>
+#include <Ghost/Systems/forwardRenderer.hpp>
+
 #include <memory>
 #include <vector>
 
@@ -33,24 +35,23 @@ class SandboxApp : public Application {
   protected:
     void onInit() override;
     void onUpdate(float dt) override;
-    void onRender(const Ghost::FrameInfo &frameInfo) override;
+    void onRender(Ghost::FrameInfo &frameInfo) override;
     void onShutdown() override;
 
   private:
     void loadGameObjects();
-    vk::raii::DescriptorSet initDescriptors();
+    void initDescriptorsAndPipelines();
     void updateUniformBuffer(uint32_t currentImage);
 
-    std::unique_ptr<Ghost::HDRITexture> m_hdriTexture;
+    std::unique_ptr<Ghost::AssetManager> m_assetManager;
 
-    std::vector<Ghost::GhostGameObject> m_gameObjects;
-
-    Ghost::GhostCamera m_camera;
-    std::unique_ptr<CameraController> m_cameraController;
+    vk::raii::PipelineLayout m_pbrPipelineLayout = nullptr;
+    std::shared_ptr<Ghost::GhostGraphicsPipeline> m_pbrPipeline;
 
     std::vector<std::unique_ptr<Ghost::GhostBuffer>> m_uniformBuffers;
     std::vector<vk::raii::DescriptorSet> m_descriptorSets;
 
-    std::unique_ptr<Ghost::HDRIRenderSystem> m_hdriRenderSystem;
-    std::unique_ptr<Ghost::SimpleRenderSystem> m_simpleRenderSystem;
+    std::vector<Ghost::GhostGameObject> m_gameObjects;
+    Ghost::GhostCamera m_camera;
+    std::unique_ptr<CameraController> m_cameraController;
 };

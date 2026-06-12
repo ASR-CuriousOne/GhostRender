@@ -1,6 +1,6 @@
 #pragma once
-#include <Ghost/Utils/pipelineConfig.hpp>
 #include <Ghost/Core/vulkanDevice.hpp>
+#include <Ghost/Utils/pipelineConfig.hpp>
 
 namespace Ghost {
 
@@ -8,9 +8,10 @@ class GhostGraphicsPipeline {
 
     const VulkanDevice &m_device;
 
-    vk::raii::Pipeline m_graphicsPipeline = nullptr;
+    vk::PipelineLayout m_pipelineLayout;
     vk::raii::ShaderModule m_vertShaderModule = nullptr;
     vk::raii::ShaderModule m_fragShaderModule = nullptr;
+    vk::raii::Pipeline m_graphicsPipeline = nullptr;
 
   public:
     GhostGraphicsPipeline(const VulkanDevice &device,
@@ -20,6 +21,12 @@ class GhostGraphicsPipeline {
     ~GhostGraphicsPipeline();
 
     vk::Pipeline operator*() const { return *m_graphicsPipeline; }
+
+    vk::PipelineLayout getPipelineLayout() const { return m_pipelineLayout; }
+
+    void bind(const vk::raii::CommandBuffer &buf) {
+        buf.bindPipeline(vk::PipelineBindPoint::eGraphics, m_graphicsPipeline);
+    }
 };
 
 } // namespace Ghost

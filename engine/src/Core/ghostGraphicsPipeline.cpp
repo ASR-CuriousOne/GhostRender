@@ -7,7 +7,7 @@ GhostGraphicsPipeline::GhostGraphicsPipeline(
     const VulkanDevice &device, const std::vector<std::byte> &vertShaderCode,
     const std::vector<std::byte> &fragShaderCode,
     const PipelineConfigInfo &configInfo)
-    : m_device(device) {
+    : m_device(device), m_pipelineLayout(configInfo.pipelineLayout) {
 
     vk::ShaderModuleCreateInfo vertCreateInfo(
         {}, vertShaderCode.size(),

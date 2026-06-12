@@ -1,5 +1,6 @@
 #include "sandboxApp.hpp"
 #include <Ghost/Resources/ghostDescriptors.hpp>
+#include <Ghost/Utils/pipelineConfig.hpp>
 #include <Ghost/Utils/utils.hpp>
 #include <csignal>
 #include <iostream>
@@ -9,26 +10,16 @@ SandboxApp::SandboxApp() {}
 void SandboxApp::onInit() {
     std::cout << "SandboxApp: Initializing..." << std::endl;
 
-    vk::raii::DescriptorSet hdriDescriptorSet = initDescriptors();
+    m_assetManager =
+        std::make_unique<Ghost::AssetManager>(m_engine->getDevice());
+
+    initDescriptorsAndPipelines();
 
     loadGameObjects();
 
-    auto hdriSystem = std::make_unique<Ghost::HDRIRenderSystem>(
-        m_engine->getDevice(), m_engine->getRenderPass(),
-        m_descriptorManager->getLayout("global").getDescriptorSetLayout(),
-        m_descriptorManager->getLayout("hdriSetLayout")
-            .getDescriptorSetLayout());
-
-    hdriSystem->setHdriDescriptorSet(std::move(hdriDescriptorSet));
-    addRenderSystem(std::move(hdriSystem));
-
-    addRenderSystem(std::make_unique<Ghost::SimpleRenderSystem>(
-        m_engine->getDevice(), m_engine->getRenderPass(),
-        m_descriptorManager->getLayout("global").getDescriptorSetLayout(),
-        m_descriptorManager->getLayout("texture").getDescriptorSetLayout()));
-
     m_cameraController = std::make_unique<CameraController>(m_camera, m_window);
-    m_cameraController->setMode(CameraController::Mode::FreeRoam);
+    m_cameraController->setMode(CameraController::Mode::Orbit);
+    m_cameraController->setTarget(m_gameObjects[0].transform.translation);
 }
 
 extern volatile sig_atomic_t g_quitRequested;
@@ -43,7 +34,7 @@ void SandboxApp::onUpdate(float dt) {
     float aspect = m_engine->getAspectRatio();
     float fov = glm::radians(60.0f);
     float nearPlane = 1.0f;
-    float farPlane = 100000.0f;
+    float farPlane = 10000.0f;
 
     m_camera.setPerspectiveProjection(fov, aspect, nearPlane, farPlane);
 
@@ -74,39 +65,35 @@ void SandboxApp::onUpdate(float dt) {
     }
 }
 
-void SandboxApp::onRender(const Ghost::FrameInfo &frameInfo) {
+void SandboxApp::onRender(Ghost::FrameInfo &frameInfo) {
     updateUniformBuffer(frameInfo.frameIndex);
 
-    std::vector<Ghost::GhostRenderObject> renderObjects;
+    frameInfo.commandBuffer.bindDescriptorSets(
+        vk::PipelineBindPoint::eGraphics, m_pbrPipeline->getPipelineLayout(), 0,
+        {*m_descriptorSets[frameInfo.frameIndex]}, nullptr);
 
+    std::vector<Ghost::GhostRenderObject> renderObjects;
     renderObjects.reserve(m_gameObjects.size());
 
-    for (const auto &obj : m_gameObjects) {
-        if (obj.model) {
+    for (auto &obj : m_gameObjects) {
+        if (obj.mesh && obj.material) {
             Ghost::GhostRenderObject renderObj{};
-
             renderObj.transformMatrix = obj.transform.mat4();
-            renderObj.model = obj.model;
-
-            if (*obj.textureDescriptorSet) {
-                renderObj.textureDescriptorSet = *obj.textureDescriptorSet;
-            }
+            renderObj.mesh = obj.mesh;
+            renderObj.material = obj.material;
 
             renderObjects.push_back(renderObj);
         }
     }
 
-    for (auto &renderSystem : m_renderSystems) {
-        renderSystem->render(frameInfo, renderObjects,
-                             m_descriptorSets[frameInfo.frameIndex]);
-    }
+    m_engine->renderScene(frameInfo.commandBuffer, renderObjects);
 }
 
 void SandboxApp::onShutdown() {
     std::cout << "SandboxApp: Shutting down..." << std::endl;
 }
 
-vk::raii::DescriptorSet SandboxApp::initDescriptors() {
+void SandboxApp::initDescriptorsAndPipelines() {
     for (int i = 0; i < Ghost::MAX_FRAMES_IN_FLIGHT; i++) {
         m_uniformBuffers.push_back(std::make_unique<Ghost::GhostBuffer>(
             m_engine->getDevice(), sizeof(GlobalUbo),
@@ -124,35 +111,8 @@ vk::raii::DescriptorSet SandboxApp::initDescriptors() {
                             vk::ShaderStageFlagBits::eFragment)
             .build());
 
-    m_descriptorManager->registerLayout(
-        "texture",
-        Ghost::GhostDescriptorSetLayout::Builder(m_engine->getDevice())
-            .addBinding(0, vk::DescriptorType::eCombinedImageSampler,
-                        vk::ShaderStageFlagBits::eFragment)
-            .build());
-
-    m_hdriTexture = std::make_unique<Ghost::HDRITexture>(
-        m_engine->getDevice(), "assets/textures/environment.hdr");
-
-    auto hdriLayout =
-        Ghost::GhostDescriptorSetLayout::Builder(m_engine->getDevice())
-            .addBinding(0, vk::DescriptorType::eCombinedImageSampler,
-                        vk::ShaderStageFlagBits::eFragment)
-            .build();
-
-    m_descriptorManager->registerLayout("hdriSetLayout", std::move(hdriLayout));
-    auto hdriSets = m_descriptorManager->allocateSets("hdriSetLayout", 1);
-    vk::raii::DescriptorSet hdriDescriptorSet = std::move(hdriSets[0]);
-
-    vk::DescriptorImageInfo imageInfo = m_hdriTexture->descriptorInfo();
-    Ghost::GhostDescriptorWriter writer(
-        m_descriptorManager->getLayout("hdriSetLayout"));
-    writer.writeImage(0, &imageInfo);
-    writer.build(hdriDescriptorSet, m_engine->getDevice());
-
     m_descriptorSets = m_descriptorManager->allocateSets(
         "global", Ghost::MAX_FRAMES_IN_FLIGHT);
-
     for (int i = 0; i < Ghost::MAX_FRAMES_IN_FLIGHT; i++) {
         auto bufferInfo = m_uniformBuffers[i]->descriptorInfo();
         Ghost::GhostDescriptorWriter(m_descriptorManager->getLayout("global"))
@@ -160,76 +120,100 @@ vk::raii::DescriptorSet SandboxApp::initDescriptors() {
             .build(m_descriptorSets[i], m_engine->getDevice());
     }
 
-    return hdriDescriptorSet;
+    m_descriptorManager->registerLayout(
+        "PBRMaterialLayout",
+        Ghost::GhostDescriptorSetLayout::Builder(m_engine->getDevice())
+            .addBinding(0, vk::DescriptorType::eCombinedImageSampler,
+                        vk::ShaderStageFlagBits::eFragment)
+            .addBinding(1, vk::DescriptorType::eCombinedImageSampler,
+                        vk::ShaderStageFlagBits::eFragment)
+            .build());
+
+    vk::PushConstantRange pushConstantRange{};
+    pushConstantRange.stageFlags =
+        vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = sizeof(Ghost::PBRPushConstants);
+
+    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts = {
+        m_descriptorManager->getLayout("global").getDescriptorSetLayout(),
+        m_descriptorManager->getLayout("PBRMaterialLayout")
+            .getDescriptorSetLayout()};
+
+    vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.setSetLayouts(descriptorSetLayouts);
+    pipelineLayoutInfo.setPushConstantRanges(pushConstantRange);
+
+    m_pbrPipelineLayout =
+        vk::raii::PipelineLayout(m_engine->getDevice(), pipelineLayoutInfo);
+
+    Ghost::PipelineConfigInfo configInfo;
+
+    Ghost::PipelineConfigInfo::defaultConfig(configInfo);
+
+    configInfo.renderPass = m_engine->getRenderPass();
+    configInfo.pipelineLayout = *m_pbrPipelineLayout;
+
+    auto bindingDescriptions = Ghost::StandardVertex::getBindingDescriptions();
+    auto attributeDescriptions =
+        Ghost::StandardVertex::getAttributeDescriptions();
+
+    configInfo.vertexInputInfo.setVertexBindingDescriptions(
+        bindingDescriptions);
+    configInfo.vertexInputInfo.setVertexAttributeDescriptions(
+        attributeDescriptions);
+
+    auto vertCode = Ghost::Utils::readFile("shaders/pbr.vert.spv");
+    auto fragCode = Ghost::Utils::readFile("shaders/pbr.frag.spv");
+
+    m_pbrPipeline = std::make_shared<Ghost::GhostGraphicsPipeline>(
+        m_engine->getDevice(), vertCode, fragCode, configInfo);
 }
 
 void SandboxApp::loadGameObjects() {
     auto env = Ghost::Utils::loadEnvFile(".env");
 
-    auto texSets = m_descriptorManager->allocateSets("texture", 2);
-
-    auto model1 = Ghost::GhostModel::createModelFromFile(m_engine->getDevice(),
-                                                         env["MODEL_PATH_1"]);
-
-    std::string texPath1 = env.contains("TEXTURE_PATH_1")
-                               ? env["TEXTURE_PATH_1"]
-                               : "assets/textures/texture1.jpg";
-    auto texture1 =
-        std::make_shared<Ghost::GhostTexture>(m_engine->getDevice(), texPath1);
-
     auto gameObject1 = Ghost::GhostGameObject::createGameObject();
-    gameObject1.model = model1;
-    gameObject1.texture = texture1;
     gameObject1.transform.translation = {0.0f, 0.0f, 0.0f};
-    gameObject1.transform.scale = {100.0f, 100.0f, 100.0f};
+    gameObject1.transform.scale = {20.0f, 20.0f, 20.0f};
 
-    gameObject1.textureDescriptorSet = std::move(texSets[0]);
+    std::string modelPath = env.contains("MODEL_PATH_1")
+                                ? env["MODEL_PATH_1"]
+                                : "assets/models/cube.obj";
+    gameObject1.mesh = m_assetManager->getMesh(modelPath);
 
-    auto imageInfo1 = texture1->descriptorInfo();
-    Ghost::GhostDescriptorWriter(m_descriptorManager->getLayout("texture"))
-        .writeImage(0, &imageInfo1)
-        .build(gameObject1.textureDescriptorSet, m_engine->getDevice());
+    std::string texPath = env.contains("TEXTURE_PATH_1")
+                              ? env["TEXTURE_PATH_1"]
+                              : "assets/textures/albedo.jpg";
+    auto albedoMap = m_assetManager->getTexture<Ghost::GhostTexture>(
+        "assets/textures/albedo.jpg");
+    auto normalMap = m_assetManager->getTexture<Ghost::GhostTexture>(
+        "assets/textures/normal.png", vk::Format::eR8G8B8A8Unorm);
+
+    auto myMaterial = std::make_shared<Ghost::PBRMaterial>(
+        m_engine->getDevice(), *m_descriptorManager, m_pbrPipeline, 1);
+
+    myMaterial->setAlbedoMap(albedoMap);
+    myMaterial->setNormalMap(normalMap);
+    myMaterial->setRoughness(0.5f);
+    myMaterial->setMetallic(0.1f);
+
+    gameObject1.material = myMaterial;
 
     m_gameObjects.push_back(std::move(gameObject1));
-
-    // auto model2 =
-    // Ghost::GhostModel::createModelFromFile(m_engine->getDevice(),
-    //                                                      env["MODEL_PATH_2"]);
-
-    // std::string texPath2 = env.contains("TEXTURE_PATH_2")
-    //                            ? env["TEXTURE_PATH_2"]
-    //                            : "assets/textures/texture2.jpg";
-    // auto texture2 =
-    //     std::make_shared<Ghost::GhostTexture>(m_engine->getDevice(),
-    //     texPath2);
-
-    // auto gameObject2 = Ghost::GhostGameObject::createGameObject();
-    // gameObject2.model = model2;
-    // gameObject2.texture = texture2;
-    // gameObject2.transform.translation = {2.0f, 0.0f, 0.0f};
-    // gameObject2.transform.scale = {1.0f, 1.0f, 1.0f};
-
-    // gameObject2.textureDescriptorSet = std::move(texSets[1]);
-
-    // auto imageInfo2 = texture1->descriptorInfo();
-    // Ghost::GhostDescriptorWriter(m_descriptorManager->getLayout("texture"))
-    //     .writeImage(0, &imageInfo2)
-    //     .build(gameObject2.textureDescriptorSet, m_engine->getDevice());
-
-    // m_gameObjects.push_back(std::move(gameObject2));
 }
 
 void SandboxApp::updateUniformBuffer(uint32_t currentImage) {
-    PointLight light1 = {.position = {0.0f, 1000.0f, 0.0f, 100.0f},
-                         .color = {1.0f, 1.0f, 0.95f, 1600.0f}};
+    PointLight light1 = {.position = {0.0f, 200.0f, 0.0f, 100.0f},
+                         .color = {1.0f, 1.0f, 0.95f, 160000.0f}};
     PointLight light2 = {.position = {0.0f, -2.0f, 2.0f, 10.0f},
                          .color = {0.0f, 1.0f, 1.0f, 10.0f}};
     GlobalUbo ubo{};
     ubo.projection = m_camera.getProjection();
     ubo.view = m_camera.getView();
     ubo.cameraPos = glm::vec4(m_camera.getPosition(), 1.0f);
-    ubo.ambientLightColor = {0.1f, 0.1f, 0.1f, 0.005f};
-    ubo.numLights = 1;
+    ubo.ambientLightColor = {0.1f, 0.1f, 0.1f, 0.1f};
+    ubo.numLights = 2;
     ubo.lights[0] = light1;
     ubo.lights[1] = light2;
 

@@ -1,5 +1,7 @@
+#include "Ghost/Resources/mesh.hpp"
 #include <Ghost/Systems/hdriRenderSystem.hpp>
 #include <Ghost/Utils/utils.hpp>
+#include <cstddef>
 
 namespace Ghost {
 
@@ -32,9 +34,10 @@ void HDRIRenderSystem::createPipeline(vk::RenderPass renderPass) {
     pipelineConfigInfo.renderPass = renderPass;
     pipelineConfigInfo.pipelineLayout = m_pipelineLayout;
 
-    pipelineConfigInfo.bindingDescriptions = Vertex::getBindingDescriptions();
+    pipelineConfigInfo.bindingDescriptions =
+        StandardVertex::getBindingDescriptions();
     pipelineConfigInfo.attributeDescriptions =
-        Vertex::getAttributeDescriptions();
+        StandardVertex::getAttributeDescriptions();
     pipelineConfigInfo.vertexInputInfo
         .setVertexBindingDescriptions(pipelineConfigInfo.bindingDescriptions)
         .setVertexAttributeDescriptions(
@@ -83,22 +86,25 @@ void HDRIRenderSystem::render(
 }
 
 void HDRIRenderSystem::loadCubeModel() {
-    GhostModel::Builder builder{};
-
     glm::vec3 c = {1.0f, 1.0f, 1.0f};
     glm::vec2 u = {0.0f, 0.0f};
     glm::vec3 n = {0.0f, 0.0f, 0.0f};
 
-    builder.vertices = {
+    std::vector<StandardVertex> vertices = {
         {{-1.0f, -1.0f, -1.0f}, c, u, n}, {{1.0f, -1.0f, -1.0f}, c, u, n},
         {{1.0f, 1.0f, -1.0f}, c, u, n},   {{-1.0f, 1.0f, -1.0f}, c, u, n},
         {{-1.0f, -1.0f, 1.0f}, c, u, n},  {{1.0f, -1.0f, 1.0f}, c, u, n},
         {{1.0f, 1.0f, 1.0f}, c, u, n},    {{-1.0f, 1.0f, 1.0f}, c, u, n}};
 
-    builder.indices = {0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7, 4, 7, 3, 4, 3, 0,
-                       1, 2, 6, 1, 6, 5, 4, 0, 1, 4, 1, 5, 3, 7, 6, 3, 6, 2};
+    std::vector<uint32_t> indices = {0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7,
+                                     4, 7, 3, 4, 3, 0, 1, 2, 6, 1, 6, 5,
+                                     4, 0, 1, 4, 1, 5, 3, 7, 6, 3, 6, 2};
 
-    m_cubeModel = std::make_unique<GhostModel>(m_device, builder.vertices,
-                                               builder.indices);
+    std::span<StandardVertex> vertexSpan(vertices);
+    std::span<StandardVertex> indexSpan(vertices);
+
+    m_cubeModel =
+        std::make_unique<Mesh>(m_device, std::as_bytes(vertexSpan),
+                               vertices.size(), indices, VertexType::Standard);
 }
 } // namespace Ghost

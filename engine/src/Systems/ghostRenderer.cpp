@@ -1,4 +1,4 @@
-#include <Ghost/Core/ghostRenderer.hpp>
+#include <Ghost/Systems/ghostRenderer.hpp>
 #include <Ghost/Utils/utils.hpp>
 #include <vulkan/vulkan_raii.hpp>
 

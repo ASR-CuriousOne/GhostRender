@@ -1,7 +1,8 @@
 #pragma once
-#include <Ghost/Core/ghostRenderer.hpp>
 #include <Ghost/Core/vulkanDevice.hpp>
 #include <Ghost/Core/vulkanInstance.hpp>
+#include <Ghost/Systems/ghostRenderer.hpp>
+#include <Ghost/Utils/ghostRenderObject.hpp>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -9,20 +10,20 @@
 
 namespace Ghost {
 
-struct GhostRenderConfig {
+struct ForwardRendererConfig {
     std::vector<const char *> instanceExtensions;
     std::function<vk::SurfaceKHR(VkInstance)> surfaceCreateCallback;
     uint32_t windowWidth;
     uint32_t windowHeight;
 };
 
-class GhostRender {
+class ForwardRenderer {
   public:
-    GhostRender(GhostRenderConfig &config);
-    ~GhostRender();
+    ForwardRenderer(ForwardRendererConfig &config);
+    ~ForwardRenderer();
 
-    GhostRender(const GhostRender &) = delete;
-    GhostRender &operator=(const GhostRender &) = delete;
+    ForwardRenderer(const ForwardRenderer &) = delete;
+    ForwardRenderer &operator=(const ForwardRenderer &) = delete;
 
     vk::raii::CommandBuffer &beginFrame();
     void endFrame();
@@ -40,7 +41,10 @@ class GhostRender {
     int getFrameIndex() const { return m_renderer->getFrameIndex(); }
     bool isFrameInProgress() const { return m_renderer->isFrameInProgress(); }
 
-	const VulkanDevice& getDevice() const {return *m_device;}
+    const VulkanDevice &getDevice() const { return *m_device; }
+
+    void renderScene(const vk::raii::CommandBuffer &commandBuffer,
+                     std::vector<GhostRenderObject> &renderObjects);
 
   private:
     std::unique_ptr<VulkanInstance> m_instance;
