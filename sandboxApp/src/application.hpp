@@ -1,7 +1,6 @@
 #pragma once
 #include "windowGLFW.hpp"
 #include <Ghost/Resources/ghostDescriptorManager.hpp>
-#include <Ghost/Systems/IRenderSystem.hpp>
 #include <Ghost/Systems/forwardRenderer.hpp>
 #include <Ghost/Utils/frameInfo.hpp>
 #include <memory>
