@@ -1,5 +1,6 @@
 #include <Ghost/Core/ghostBuffer.hpp>
 #include <Ghost/Resources/textureBase.hpp>
+#include <cmath>
 
 namespace Ghost {
 TextureBase::TextureBase(VulkanDevice &device) : m_device(device) {}
@@ -7,6 +8,7 @@ TextureBase::TextureBase(VulkanDevice &device) : m_device(device) {}
 void TextureBase::createTextureImage(const void *pixels,
                                      vk::DeviceSize imageSize, uint32_t width,
                                      uint32_t height, vk::Format format) {
+
     GhostBuffer stagingBuffer(m_device, imageSize,
                               vk::BufferUsageFlagBits::eTransferSrc,
                               vk::MemoryPropertyFlagBits::eHostVisible |
@@ -15,11 +17,16 @@ void TextureBase::createTextureImage(const void *pixels,
     stagingBuffer.writeToBuffer(std::span<const uint8_t>(
         static_cast<const uint8_t *>(pixels), static_cast<size_t>(imageSize)));
 
+    m_mipLevels =
+        static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) +
+        1;
     m_ghostImage = std::make_unique<GhostImage>(
         m_device, width, height, format, vk::ImageTiling::eOptimal,
-        vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+        vk::ImageUsageFlagBits::eTransferDst |
+            vk::ImageUsageFlagBits::eSampled |
+            vk::ImageUsageFlagBits::eTransferSrc,
         vk::MemoryPropertyFlagBits::eDeviceLocal,
-        vk::ImageAspectFlagBits::eColor);
+        vk::ImageAspectFlagBits::eColor, m_mipLevels);
 
     auto commandBuffer = m_device.beginSingleTimeCommands();
 
@@ -27,8 +34,7 @@ void TextureBase::createTextureImage(const void *pixels,
                                         vk::ImageLayout::eTransferDstOptimal);
     copyBufferToImage(commandBuffer, stagingBuffer.getBuffer(),
                       *m_ghostImage->getImage(), width, height);
-    m_ghostImage->transitionImageLayout(
-        commandBuffer, vk::ImageLayout::eShaderReadOnlyOptimal);
+    m_ghostImage->generateMipmaps(commandBuffer, width, height);
 
     m_device.endSingleTimeCommands(commandBuffer);
 
@@ -53,7 +59,7 @@ void TextureBase::createTextureSampler() {
         .setMipmapMode(vk::SamplerMipmapMode::eLinear)
         .setMipLodBias(0.0f)
         .setMinLod(0.0f)
-        .setMaxLod(0.0f);
+        .setMaxLod(static_cast<float>(m_mipLevels));
 
     m_sampler = vk::raii::Sampler(m_device, createInfo);
 }

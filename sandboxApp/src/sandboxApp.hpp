@@ -39,11 +39,17 @@ class SandboxApp : public Application {
     void onShutdown() override;
 
   private:
+    void initDescriptors();
+    void initPBRPipeline();
+    void initSkyboxPipeline();
     void loadGameObjects();
-    void initDescriptorsAndPipelines();
+
     void updateUniformBuffer(uint32_t currentImage);
 
     std::unique_ptr<Ghost::AssetManager> m_assetManager;
+
+    vk::raii::PipelineLayout m_skyboxPipelineLayout = nullptr;
+    std::shared_ptr<Ghost::GhostGraphicsPipeline> m_skyboxPipeline;
 
     vk::raii::PipelineLayout m_pbrPipelineLayout = nullptr;
     std::shared_ptr<Ghost::GhostGraphicsPipeline> m_pbrPipeline;

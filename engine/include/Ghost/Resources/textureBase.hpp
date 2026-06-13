@@ -29,6 +29,7 @@ class TextureBase {
     VulkanDevice &m_device;
     std::unique_ptr<GhostImage> m_ghostImage;
     vk::raii::Sampler m_sampler = nullptr;
+	uint32_t m_mipLevels = 1;
 
     void createTextureImage(const void *pixels, vk::DeviceSize imageSize,
                             uint32_t width, uint32_t height, vk::Format format);

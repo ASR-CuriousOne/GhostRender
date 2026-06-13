@@ -29,7 +29,7 @@ PipelineConfigInfo::defaultConfig(PipelineConfigInfo &defaultConfig) {
         .setRasterizerDiscardEnable(vk::False)
         .setPolygonMode(vk::PolygonMode::eFill)
         .setLineWidth(1.0f)
-        .setCullMode(vk::CullModeFlags::BitsType::eBack)
+        .setCullMode(vk::CullModeFlagBits::eBack)
         .setFrontFace(vk::FrontFace::eCounterClockwise)
         .setDepthBiasEnable(vk::False);
 

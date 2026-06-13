@@ -31,6 +31,8 @@ class GhostImage {
 
     void transitionImageLayout(vk::raii::CommandBuffer &cmd,
                                vk::ImageLayout newLayout);
+    void generateMipmaps(vk::raii::CommandBuffer &cmd, uint32_t width,
+                         uint32_t height);
 
   private:
     std::reference_wrapper<VulkanDevice> m_device;

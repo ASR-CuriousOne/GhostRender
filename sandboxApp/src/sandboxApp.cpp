@@ -1,5 +1,8 @@
 #include "sandboxApp.hpp"
+#include "vulkan/vulkan.hpp"
 #include <Ghost/Resources/ghostDescriptors.hpp>
+#include <Ghost/Resources/hdriTexture.hpp>
+#include <Ghost/Resources/skyboxMaterial.hpp>
 #include <Ghost/Utils/pipelineConfig.hpp>
 #include <Ghost/Utils/utils.hpp>
 #include <csignal>
@@ -13,8 +16,9 @@ void SandboxApp::onInit() {
     m_assetManager =
         std::make_unique<Ghost::AssetManager>(m_engine->getDevice());
 
-    initDescriptorsAndPipelines();
-
+    initDescriptors();
+    initPBRPipeline();
+    initSkyboxPipeline();
     loadGameObjects();
 
     m_cameraController = std::make_unique<CameraController>(m_camera, m_window);
@@ -93,7 +97,7 @@ void SandboxApp::onShutdown() {
     std::cout << "SandboxApp: Shutting down..." << std::endl;
 }
 
-void SandboxApp::initDescriptorsAndPipelines() {
+void SandboxApp::initDescriptors() {
     for (int i = 0; i < Ghost::MAX_FRAMES_IN_FLIGHT; i++) {
         m_uniformBuffers.push_back(std::make_unique<Ghost::GhostBuffer>(
             m_engine->getDevice(), sizeof(GlobalUbo),
@@ -119,7 +123,8 @@ void SandboxApp::initDescriptorsAndPipelines() {
             .writeBuffer(0, &bufferInfo)
             .build(m_descriptorSets[i], m_engine->getDevice());
     }
-
+}
+void SandboxApp::initPBRPipeline() {
     m_descriptorManager->registerLayout(
         "PBRMaterialLayout",
         Ghost::GhostDescriptorSetLayout::Builder(m_engine->getDevice())
@@ -169,6 +174,72 @@ void SandboxApp::initDescriptorsAndPipelines() {
     m_pbrPipeline = std::make_shared<Ghost::GhostGraphicsPipeline>(
         m_engine->getDevice(), vertCode, fragCode, configInfo);
 }
+void SandboxApp::initSkyboxPipeline() {
+    m_descriptorManager->registerLayout(
+        "SkyboxLayout",
+        Ghost::GhostDescriptorSetLayout::Builder(m_engine->getDevice())
+            .addBinding(0, vk::DescriptorType::eCombinedImageSampler,
+                        vk::ShaderStageFlagBits::eFragment)
+            .build());
+
+    std::vector<vk::DescriptorSetLayout> skyboxSetLayouts = {
+        m_descriptorManager->getLayout("global").getDescriptorSetLayout(),
+        m_descriptorManager->getLayout("SkyboxLayout")
+            .getDescriptorSetLayout()};
+    vk::PushConstantRange pushConstantRange{};
+    pushConstantRange.stageFlags =
+        vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = sizeof(Ghost::PBRPushConstants);
+
+    vk::PipelineLayoutCreateInfo skyboxLayoutInfo{};
+    skyboxLayoutInfo.setSetLayouts(skyboxSetLayouts);
+	skyboxLayoutInfo.setPushConstantRanges(pushConstantRange);
+    m_skyboxPipelineLayout =
+        vk::raii::PipelineLayout(m_engine->getDevice(), skyboxLayoutInfo);
+
+    Ghost::PipelineConfigInfo skyboxConfig;
+    Ghost::PipelineConfigInfo::defaultConfig(skyboxConfig);
+
+    skyboxConfig.depthStencilInfo.setDepthCompareOp(
+        vk::CompareOp::eLessOrEqual);
+    skyboxConfig.depthStencilInfo.setDepthWriteEnable(VK_FALSE);
+
+	skyboxConfig.rasterizationInfo.setCullMode(vk::CullModeFlagBits::eFront);
+
+    skyboxConfig.renderPass = m_engine->getRenderPass();
+    skyboxConfig.pipelineLayout = *m_skyboxPipelineLayout;
+
+    auto bindingDescriptions = Ghost::StandardVertex::getBindingDescriptions();
+    auto attributeDescriptions =
+        Ghost::StandardVertex::getAttributeDescriptions();
+    skyboxConfig.vertexInputInfo.setVertexBindingDescriptions(
+        bindingDescriptions);
+    skyboxConfig.vertexInputInfo.setVertexAttributeDescriptions(
+        attributeDescriptions);
+
+    auto skyVertCode = Ghost::Utils::readFile("shaders/skybox.vert.spv");
+    auto skyFragCode = Ghost::Utils::readFile("shaders/skybox.frag.spv");
+
+    m_skyboxPipeline = std::make_shared<Ghost::GhostGraphicsPipeline>(
+        m_engine->getDevice(), skyVertCode, skyFragCode, skyboxConfig);
+
+    auto skyboxObj = Ghost::GhostGameObject::createGameObject();
+
+    skyboxObj.transform.scale = {500.0f, 500.0f, 500.0f};
+
+    skyboxObj.mesh = m_assetManager->getMesh("assets/meshes/cube.obj");
+    auto hdriTexture = std::make_shared<Ghost::HDRITexture>(
+        m_engine->getDevice(), "assets/textures/environment.hdr");
+
+    auto skyboxMaterial = std::make_shared<Ghost::SkyboxMaterial>(
+        m_engine->getDevice(), *m_descriptorManager, m_skyboxPipeline, 2);
+
+    skyboxMaterial->setHDRIMap(hdriTexture);
+    skyboxObj.material = skyboxMaterial;
+
+    m_gameObjects.push_back(std::move(skyboxObj));
+}
 
 void SandboxApp::loadGameObjects() {
     auto env = Ghost::Utils::loadEnvFile(".env");
@@ -179,7 +250,7 @@ void SandboxApp::loadGameObjects() {
 
     std::string modelPath = env.contains("MODEL_PATH_1")
                                 ? env["MODEL_PATH_1"]
-                                : "assets/models/cube.obj";
+                                : "assets/meshes/cube.obj";
     gameObject1.mesh = m_assetManager->getMesh(modelPath);
 
     std::string texPath = env.contains("TEXTURE_PATH_1")
@@ -190,15 +261,15 @@ void SandboxApp::loadGameObjects() {
     auto normalMap = m_assetManager->getTexture<Ghost::GhostTexture>(
         "assets/textures/normal.png", vk::Format::eR8G8B8A8Unorm);
 
-    auto myMaterial = std::make_shared<Ghost::PBRMaterial>(
+    auto material = std::make_shared<Ghost::PBRMaterial>(
         m_engine->getDevice(), *m_descriptorManager, m_pbrPipeline, 1);
 
-    myMaterial->setAlbedoMap(albedoMap);
-    myMaterial->setNormalMap(normalMap);
-    myMaterial->setRoughness(0.5f);
-    myMaterial->setMetallic(0.1f);
+    material->setAlbedoMap(albedoMap);
+    material->setNormalMap(normalMap);
+    material->setRoughness(0.5f);
+    material->setMetallic(0.1f);
 
-    gameObject1.material = myMaterial;
+    gameObject1.material = material;
 
     m_gameObjects.push_back(std::move(gameObject1));
 }
