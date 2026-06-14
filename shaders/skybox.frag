@@ -21,7 +21,7 @@ vec2 SampleSphericalMap(vec3 v)
 void main() {
     vec2 sphericalUV = SampleSphericalMap(inUVW);
     
-    vec3 envColor = texture(hdriMap, sphericalUV).rgb;
+    vec3 envColor = textureLod(hdriMap, sphericalUV, 0.0).rgb;
     
     envColor = envColor / (envColor + vec3(1.0));
     
