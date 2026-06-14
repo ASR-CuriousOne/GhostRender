@@ -4,6 +4,7 @@
 #include "cameraController.hpp"
 #include "ghostCamera.hpp"
 #include "ghostGameObject.hpp"
+#include "imguiLayer.hpp"
 
 #include <Ghost/Core/ghostGraphicsPipeline.hpp>
 #include <Ghost/Resources/assetManager.hpp>
@@ -46,6 +47,8 @@ class SandboxApp : public Application {
 
     void updateUniformBuffer(uint32_t currentImage);
 
+    std::unique_ptr<ImGuiLayer> m_imguiLayer;
+
     std::unique_ptr<Ghost::AssetManager> m_assetManager;
 
     vk::raii::PipelineLayout m_skyboxPipelineLayout = nullptr;
@@ -60,4 +63,11 @@ class SandboxApp : public Application {
     std::vector<Ghost::GhostGameObject> m_gameObjects;
     Ghost::GhostCamera m_camera;
     std::unique_ptr<CameraController> m_cameraController;
+
+	static constexpr size_t FRAME_HISTORY_COUNT = 1000;
+    std::array<float, FRAME_HISTORY_COUNT> m_frameTimes{};
+    size_t m_frameTimeIndex = 0;
+	float m_averageLatency = 0.0f;
+    float m_maxLatency = 0.0f;
+    float m_minLatency = 999.0f;
 };

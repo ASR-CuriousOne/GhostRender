@@ -1,4 +1,5 @@
 #include "sandboxApp.hpp"
+#include "imgui.h"
 #include "vulkan/vulkan.hpp"
 #include <Ghost/Resources/ghostDescriptors.hpp>
 #include <Ghost/Resources/hdriTexture.hpp>
@@ -12,6 +13,10 @@ SandboxApp::SandboxApp() {}
 
 void SandboxApp::onInit() {
     std::cout << "SandboxApp: Initializing..." << std::endl;
+
+    m_imguiLayer = std::make_unique<ImGuiLayer>(m_engine->getDevice(), m_window,
+                                                m_engine->getRenderPass(),
+                                                *(m_engine->getInstance()));
 
     m_assetManager =
         std::make_unique<Ghost::AssetManager>(m_engine->getDevice());
@@ -29,11 +34,50 @@ void SandboxApp::onInit() {
 extern volatile sig_atomic_t g_quitRequested;
 
 void SandboxApp::onUpdate(float dt) {
-
     if (glfwGetKey(m_window.m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS ||
         g_quitRequested == 1) {
         close();
     }
+
+    float frameTimeMs = dt * 1000.0f;
+
+    m_frameTimes[m_frameTimeIndex] = frameTimeMs;
+    m_frameTimeIndex = (m_frameTimeIndex + 1) % FRAME_HISTORY_COUNT;
+
+    m_averageLatency = 0.0f;
+    m_maxLatency = 0.0f;
+    m_minLatency = 999.0f;
+    for (float t : m_frameTimes) {
+        m_averageLatency += t;
+        if (t > m_maxLatency)
+            m_maxLatency = t;
+        if (t < m_minLatency && t > 0.0f)
+            m_minLatency = t;
+    }
+    m_averageLatency /= FRAME_HISTORY_COUNT;
+
+    float fps = (m_averageLatency > 0.0f) ? (1000.0f / m_averageLatency) : 0.0f;
+
+    m_imguiLayer->beginFrame();
+
+	ImGui::Begin("Engine Diagnostics");
+
+    ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Performance Metrics");
+    ImGui::Separator();
+
+    ImGui::Text("FPS: %.1f", fps);
+    ImGui::Text("Avg Latency: %.3f ms", m_averageLatency);
+    ImGui::Text("Min Latency: %.3f ms", m_minLatency);
+    ImGui::Text("Max Latency (Spike): %.3f ms", m_maxLatency);
+
+    ImGui::Spacing();
+
+    char overlay[32];
+    snprintf(overlay, sizeof(overlay), "Inst: %.2f ms", frameTimeMs);
+    ImGui::PlotLines("##FrameTimes", m_frameTimes.data(), m_frameTimes.size(),
+                     m_frameTimeIndex, overlay, 0.0f, 10.0f, ImVec2(0, 80));
+
+    ImGui::End();
 
     float aspect = m_engine->getAspectRatio();
     float fov = glm::radians(60.0f);
@@ -42,27 +86,36 @@ void SandboxApp::onUpdate(float dt) {
 
     m_camera.setPerspectiveProjection(fov, aspect, nearPlane, farPlane);
 
-    static bool oKeyPressed = false;
-    GLFWwindow *window = m_window.getWindow();
-    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
-        if (!oKeyPressed) {
-            if (m_cameraController->getMode() ==
-                CameraController::Mode::FreeRoam) {
-                m_cameraController->setMode(CameraController::Mode::Orbit);
-                if (!m_gameObjects.empty()) {
-                    m_cameraController->setTarget(
-                        m_gameObjects[0].transform.translation);
+    ImGuiIO &io = ImGui::GetIO();
+    bool mouseCaptured = io.WantCaptureMouse;
+    bool keyboardCaptured = io.WantCaptureKeyboard;
+
+    if (!keyboardCaptured) {
+        static bool oKeyPressed = false;
+        GLFWwindow *window = m_window.getWindow();
+        if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+            if (!oKeyPressed) {
+                if (m_cameraController->getMode() ==
+                    CameraController::Mode::FreeRoam) {
+                    m_cameraController->setMode(CameraController::Mode::Orbit);
+                    if (!m_gameObjects.empty()) {
+                        m_cameraController->setTarget(
+                            m_gameObjects[0].transform.translation);
+                    }
+                } else {
+                    m_cameraController->setMode(
+                        CameraController::Mode::FreeRoam);
                 }
-            } else {
-                m_cameraController->setMode(CameraController::Mode::FreeRoam);
+                oKeyPressed = true;
             }
-            oKeyPressed = true;
+        } else {
+            oKeyPressed = false;
         }
-    } else {
-        oKeyPressed = false;
     }
 
-    m_cameraController->update(dt);
+    if (!mouseCaptured && !keyboardCaptured) {
+        m_cameraController->update(dt);
+    }
 
     for (auto &obj : m_gameObjects) {
         obj.update(dt);
@@ -91,6 +144,8 @@ void SandboxApp::onRender(Ghost::FrameInfo &frameInfo) {
     }
 
     m_engine->renderScene(frameInfo.commandBuffer, renderObjects);
+
+    m_imguiLayer->render(frameInfo.commandBuffer);
 }
 
 void SandboxApp::onShutdown() {
@@ -194,7 +249,7 @@ void SandboxApp::initSkyboxPipeline() {
 
     vk::PipelineLayoutCreateInfo skyboxLayoutInfo{};
     skyboxLayoutInfo.setSetLayouts(skyboxSetLayouts);
-	skyboxLayoutInfo.setPushConstantRanges(pushConstantRange);
+    skyboxLayoutInfo.setPushConstantRanges(pushConstantRange);
     m_skyboxPipelineLayout =
         vk::raii::PipelineLayout(m_engine->getDevice(), skyboxLayoutInfo);
 
@@ -205,7 +260,7 @@ void SandboxApp::initSkyboxPipeline() {
         vk::CompareOp::eLessOrEqual);
     skyboxConfig.depthStencilInfo.setDepthWriteEnable(VK_FALSE);
 
-	skyboxConfig.rasterizationInfo.setCullMode(vk::CullModeFlagBits::eFront);
+    skyboxConfig.rasterizationInfo.setCullMode(vk::CullModeFlagBits::eFront);
 
     skyboxConfig.renderPass = m_engine->getRenderPass();
     skyboxConfig.pipelineLayout = *m_skyboxPipelineLayout;

@@ -42,6 +42,7 @@ class ForwardRenderer {
     bool isFrameInProgress() const { return m_renderer->isFrameInProgress(); }
 
     const VulkanDevice &getDevice() const { return *m_device; }
+    VulkanInstance &getInstance() const { return *m_instance; }
 
     void renderScene(const vk::raii::CommandBuffer &commandBuffer,
                      std::vector<GhostRenderObject> &renderObjects);

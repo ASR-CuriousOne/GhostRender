@@ -20,6 +20,8 @@ class VulkanDevice {
     operator const vk::raii::Device &() const { return m_device; }
     const vk::raii::Device *operator->() const { return &m_device; }
 
+	vk::Device getRawDeviceHandle() { return m_device; }
+
     operator const vk::PhysicalDevice &() const { return *m_physicalDevice; }
 
     vk::PhysicalDeviceProperties getPhysicalDeviceProperties() {
@@ -35,6 +37,8 @@ class VulkanDevice {
 
     void submitGraphicsQueue(const vk::SubmitInfo &submitInfo,
                              const vk::Fence &fence);
+    vk::Queue getGraphicsQueue() { return m_graphicsQueue; }
+
     vk::Result submitPresentQueue(const vk::PresentInfoKHR &presentInfo);
 
     std::string getDeviceName();
